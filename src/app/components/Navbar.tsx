@@ -141,7 +141,7 @@ export function Navbar() {
       </nav>
 
       {/* ── BOTTOM NAV mobile ── */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: '#fff', borderTop: '1px solid #F3F4F6', boxShadow: '0 -2px 12px rgba(0,0,0,0.06)' }}>
+      <div className="hidden md:hidden" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: '#fff', borderTop: '1px solid #F3F4F6', boxShadow: '0 -2px 12px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', maxWidth: 480, margin: '0 auto' }}>
           {[
             { to: '/',        icon: Home,       label: 'Accueil'   },
