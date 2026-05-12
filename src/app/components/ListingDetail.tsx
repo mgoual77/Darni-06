@@ -1,209 +1,495 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, Square, Bed, Bath, ChevronLeft, MessageCircle, Phone, Sparkles, Star, Share2, Bookmark, Calendar, Eye } from 'lucide-react';
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
 
-const BADGE_STYLES: Record<string, { bg: string; text: string }> = {
-  Vente:      { bg: '#1B4FD8', text: '#fff' },
-  Location:   { bg: '#16A34A', text: '#fff' },
-  Colocation: { bg: '#EA580C', text: '#fff' },
-  Terrain:    { bg: '#7C3AED', text: '#fff' },
-};
+interface Listing {
+  id: string
+  title: string
+  description: string
+  type: string
+  transaction: string
+  price: number
+  surface: number
+  rooms: number | null
+  bedrooms: number | null
+  bathrooms: number | null
+  floor: number | null
+  wilaya: string
+  commune: string | null
+  quartier: string | null
+  amenities: string[]
+  photos: string[]
+  whatsapp: string | null
+  phone: string | null
+  document_type: string | null
+  status: string
+  created_at: string
+  user_id: string
+}
 
-const LISTING_DATA = {
-  1: {
-    images: [
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
-      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=80',
-      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80',
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
-    ],
-    price: 15000000,
-    type: 'Vente',
-    title: 'Magnifique appartement à Hydra',
-    description: "Superbe appartement situé dans le quartier résidentiel d'Hydra. Proche de toutes commodités, écoles et transports. Vue imprenable sur la ville. L'appartement est en excellent état avec des finitions de qualité supérieure.",
-    wilaya: 'Alger',
-    commune: 'Hydra',
-    surface: 120,
-    rooms: 3,
-    bathrooms: 2,
-    rating: 4.9,
-    views: 1234,
-    postedDate: '2026-04-15',
-    features: ['Parking', 'Balcon', 'Ascenseur', 'Sécurité 24/7', 'Climatisation', 'Cuisine équipée'],
-  },
-};
+const AMENITY_LABELS: Record<string, string> = {
+  ascenseur: 'Ascenseur',
+  parking: 'Parking',
+  balcon: 'Balcon',
+  terrasse: 'Terrasse',
+  jardin: 'Jardin',
+  piscine: 'Piscine',
+  securite: 'Sécurité / Gardien',
+  meuble: 'Meublé',
+  climatisation: 'Climatisation',
+  cave: 'Cave / Box',
+}
 
-export function ListingDetail() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isSaved, setIsSaved] = useState(false);
+const TYPE_LABELS: Record<string, string> = {
+  appartement: 'Appartement',
+  villa: 'Villa',
+  bureau: 'Bureau',
+  local: 'Local commercial',
+  terrain: 'Terrain',
+  autre: 'Autre',
+}
 
-  const listing = LISTING_DATA[Number(id) as keyof typeof LISTING_DATA] || LISTING_DATA[1];
-  const badge = BADGE_STYLES[listing.type] ?? BADGE_STYLES.Vente;
+export default function ListingDetail() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const [listing, setListing] = useState<Listing | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [activePhoto, setActivePhoto] = useState(0)
+  const [showAllPhotos, setShowAllPhotos] = useState(false)
 
-  const handleWhatsApp = () => {
-    const msg = encodeURIComponent(`Bonjour, je suis intéressé par votre annonce: ${listing.title} à ${listing.price.toLocaleString('fr-DZ')} DA`);
-    window.open(`https://wa.me/213XXXXXXXXX?text=${msg}`, '_blank');
-  };
+  const BLUE = '#1B4FD8'
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({ title: listing.title, text: `Découvrez cette annonce sur Darni`, url: window.location.href });
+  useEffect(() => {
+    if (!id) return
+    const fetch = async () => {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('id', id)
+        .single()
+      if (!error && data) setListing(data)
+      setLoading(false)
     }
-  };
+    fetch()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ fontFamily: 'Lato, sans-serif' }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          <p className="text-gray-500 text-sm">Chargement de l'annonce...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!listing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ fontFamily: 'Lato, sans-serif' }}>
+        <div className="text-center">
+          <p className="text-2xl font-bold text-gray-800 mb-2">Annonce introuvable</p>
+          <p className="text-gray-500 mb-4">Cette annonce n'existe pas ou a été supprimée.</p>
+          <button onClick={() => navigate('/')} className="px-6 py-2 rounded-lg text-white text-sm font-bold" style={{ background: BLUE }}>
+            Retour à l'accueil
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const photos = listing.photos?.length ? listing.photos : [
+    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'
+  ]
+
+  const whatsappNumber = listing.whatsapp?.replace(/\D/g, '') || listing.phone?.replace(/\D/g, '') || ''
+  const whatsappLink = whatsappNumber
+    ? `https://wa.me/${whatsappNumber.startsWith('213') ? whatsappNumber : '213' + whatsappNumber}`
+    : '#'
+
+  const location = [listing.quartier, listing.commune, listing.wilaya].filter(Boolean).join(', ')
+
+  const formatPrice = (p: number) => p.toLocaleString('fr-DZ') + ' DA'
+
+  const share = () => {
+    if (navigator.share) {
+      navigator.share({ title: listing.title, url: window.location.href })
+    } else {
+      navigator.clipboard.writeText(window.location.href)
+      alert('Lien copié !')
+    }
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fff', paddingBottom: 96 }}>
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: 'Lato, sans-serif' }}>
 
-      {/* ── HEADER FIXE ── */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid #E5E7EB', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-        <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button
-            onClick={() => navigate(-1)}
-            style={{ padding: 8, borderRadius: 10, border: 'none', background: 'none', cursor: 'pointer' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F3F4F6'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'none'}
-          >
-            <ChevronLeft className="w-6 h-6" style={{ color: '#111827' }} />
+      {/* Breadcrumb */}
+      <div className="bg-white border-b px-4 py-2.5">
+        <div className="max-w-6xl mx-auto flex items-center gap-2 text-xs text-gray-500 flex-wrap">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-blue-600 transition">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Retour
           </button>
-
-          <span style={{ fontSize: '1.6rem', fontWeight: 700, color: '#111827' }}>Détails</span>
-
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={handleShare} style={{ padding: 8, borderRadius: 10, border: 'none', background: 'none', cursor: 'pointer' }}>
-              <Share2 className="w-5 h-5" style={{ color: '#374151' }} />
-            </button>
-            <button onClick={() => setIsSaved(!isSaved)} style={{ padding: 8, borderRadius: 10, border: 'none', background: 'none', cursor: 'pointer' }}>
-              <Bookmark className="w-5 h-5" style={{ fill: isSaved ? '#1B4FD8' : 'none', color: isSaved ? '#1B4FD8' : '#374151' }} />
-            </button>
-          </div>
+          <span>›</span>
+          <Link to="/" className="hover:text-blue-600 transition">Accueil</Link>
+          <span>›</span>
+          <span className="hover:text-blue-600 cursor-pointer">{listing.wilaya}</span>
+          <span>›</span>
+          <span className="hover:text-blue-600 cursor-pointer">{TYPE_LABELS[listing.type] || listing.type}</span>
+          <span>›</span>
+          <span className="text-gray-700 font-medium truncate max-w-xs">{listing.title}</span>
         </div>
       </div>
 
-      {/* ── GALERIE PHOTOS ── */}
-      <div style={{ position: 'relative', marginTop: 60 }}>
-        <div className="scrollbar-hide" style={{ overflowX: 'auto', display: 'flex' }}>
-          {listing.images.map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              alt={`Photo ${i + 1}`}
-              style={{ width: '100%', height: 320, objectFit: 'cover', flexShrink: 0 }}
-              onClick={() => setCurrentImageIndex(i)}
-            />
-          ))}
-        </div>
+      <div className="max-w-6xl mx-auto px-4 py-6">
 
-        {/* Dots navigation */}
-        <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
-          {listing.images.map((_, i) => (
-            <div key={i} style={{ height: 6, borderRadius: 99, background: '#fff', opacity: i === currentImageIndex ? 1 : 0.45, width: i === currentImageIndex ? 24 : 6, transition: 'all 0.2s' }} />
-          ))}
-        </div>
-
-        {/* Badge type */}
-        <div style={{ position: 'absolute', top: 12, left: 12, background: badge.bg, color: badge.text, fontSize: '1.1rem', fontWeight: 700, padding: '4px 12px', borderRadius: 9999 }}>
-          {listing.type}
-        </div>
-
-        {/* Rating */}
-        <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(255,255,255,0.95)', borderRadius: 20, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Star className="w-4 h-4" style={{ fill: '#F5A623', color: '#F5A623' }} />
-          <span style={{ fontSize: '1.2rem', fontWeight: 700 }}>{listing.rating}</span>
-        </div>
-
-        {/* Compteur photos */}
-        <div style={{ position: 'absolute', bottom: 14, right: 14, background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '1.1rem', fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>
-          {currentImageIndex + 1}/{listing.images.length}
-        </div>
-      </div>
-
-      {/* ── CONTENU ── */}
-      <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-        {/* Prix + titre */}
-        <div>
-          <div style={{ fontSize: '3rem', fontWeight: 800, color: '#1B4FD8', marginBottom: 6 }}>
-            {listing.price.toLocaleString('fr-DZ')} DA
-          </div>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: 700, color: '#111827', marginBottom: 10 }}>{listing.title}</h2>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#6B7280', marginBottom: 10 }}>
-            <MapPin className="w-4 h-4" style={{ color: '#9CA3AF' }} />
-            <span style={{ fontSize: '1.4rem', fontWeight: 500 }}>{listing.commune}, {listing.wilaya}</span>
-          </div>
-
-          <div style={{ display: 'flex', gap: 16, color: '#9CA3AF' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Eye className="w-4 h-4" />
-              <span style={{ fontSize: '1.2rem' }}>{listing.views.toLocaleString()} vues</span>
+        {/* ─── GALERIE ─── */}
+        <div className="mb-6">
+          {/* Desktop galerie */}
+          <div className="hidden md:grid grid-cols-4 grid-rows-2 gap-2 h-[420px] rounded-xl overflow-hidden">
+            {/* Grande photo */}
+            <div
+              className="col-span-2 row-span-2 relative cursor-pointer group"
+              onClick={() => setShowAllPhotos(true)}
+            >
+              <img
+                src={photos[0]}
+                alt={listing.title}
+                className="w-full h-full object-cover group-hover:brightness-90 transition"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition" />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Calendar className="w-4 h-4" />
-              <span style={{ fontSize: '1.2rem' }}>Publié le {new Date(listing.postedDate).toLocaleDateString('fr-FR')}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Specs grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-          {[
-            { icon: Square, value: `${listing.surface} m²`, label: 'Surface' },
-            { icon: Bed, value: listing.rooms, label: 'Chambres' },
-            { icon: Bath, value: listing.bathrooms, label: 'Sdb' },
-          ].map(({ icon: Icon, value, label }) => (
-            <div key={label} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 14, padding: '16px 12px', textAlign: 'center' }}>
-              <Icon className="w-6 h-6 mx-auto mb-2" style={{ color: '#1B4FD8' }} />
-              <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#111827', marginBottom: 2 }}>{value}</div>
-              <div style={{ fontSize: '1.1rem', color: '#9CA3AF', fontWeight: 400 }}>{label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Description */}
-        <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 16, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '1.6rem', fontWeight: 700, color: '#111827', marginBottom: 10 }}>Description</h3>
-          <p style={{ fontSize: '1.4rem', color: '#4B5563', lineHeight: 1.7, fontWeight: 400 }}>{listing.description}</p>
-        </div>
-
-        {/* Caractéristiques */}
-        <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 16, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '1.6rem', fontWeight: 700, color: '#111827', marginBottom: 14 }}>Caractéristiques</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-            {listing.features.map((f) => (
-              <div key={f} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: '10px 14px', fontSize: '1.3rem', color: '#374151', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: '#1B4FD8' }}>✓</span> {f}
+            {/* Miniatures */}
+            {[1, 2, 3, 4].map(i => (
+              <div
+                key={i}
+                className="relative cursor-pointer group overflow-hidden"
+                onClick={() => { setActivePhoto(i); setShowAllPhotos(true) }}
+              >
+                {photos[i] ? (
+                  <img
+                    src={photos[i]}
+                    alt={`Photo ${i + 1}`}
+                    className="w-full h-full object-cover group-hover:brightness-90 transition"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
+                {i === 4 && photos.length > 5 && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">+{photos.length - 5}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
+
+          {/* Mobile galerie slider */}
+          <div className="md:hidden relative rounded-xl overflow-hidden h-64">
+            <img
+              src={photos[activePhoto]}
+              alt={listing.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+              {activePhoto + 1}/{photos.length}
+            </div>
+            {activePhoto > 0 && (
+              <button
+                onClick={() => setActivePhoto(p => p - 1)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-8 h-8 flex items-center justify-center shadow"
+              >
+                ‹
+              </button>
+            )}
+            {activePhoto < photos.length - 1 && (
+              <button
+                onClick={() => setActivePhoto(p => p + 1)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-8 h-8 flex items-center justify-center shadow"
+              >
+                ›
+              </button>
+            )}
+          </div>
+
+          {/* Bouton voir toutes les photos */}
+          {photos.length > 1 && (
+            <button
+              onClick={() => setShowAllPhotos(true)}
+              className="mt-2 text-sm font-semibold flex items-center gap-1 hover:underline"
+              style={{ color: BLUE }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              Voir toutes les photos ({photos.length})
+            </button>
+          )}
         </div>
 
-        {/* ── CTA BUTTONS ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Booster — or */}
-          <button style={{ width: '100%', background: '#F5A623', color: '#fff', border: 'none', borderRadius: 14, padding: '14px 0', fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', boxShadow: '0 2px 12px rgba(245,166,35,0.3)' }}>
-            <Sparkles className="w-5 h-5" /> Booster cette annonce
-          </button>
+        {/* ─── CONTENU 2 COLONNES ─── */}
+        <div className="flex flex-col md:flex-row gap-6">
 
-          {/* Appeler + WhatsApp côte à côte */}
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              style={{ flex: 1, background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: 14, padding: '14px 0', fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#1640B0'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#1B4FD8'}
-            >
-              <Phone className="w-5 h-5" /> Appeler
-            </button>
-            <button
-              onClick={handleWhatsApp}
-              style={{ flex: 1, background: '#F0FDF4', color: '#16A34A', border: '1.5px solid #16A34A', borderRadius: 14, padding: '14px 0', fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}
-            >
-              <MessageCircle className="w-5 h-5" /> WhatsApp
-            </button>
+          {/* Colonne gauche */}
+          <div className="flex-1 space-y-4">
+
+            {/* Prix + titre */}
+            <div className="bg-white rounded-xl p-5 shadow-sm border">
+              <div className="flex items-start justify-between flex-wrap gap-2 mb-2">
+                <div>
+                  <p className="text-3xl font-black" style={{ color: BLUE }}>
+                    {formatPrice(listing.price)}
+                    {listing.transaction === 'location' && (
+                      <span className="text-base font-normal text-gray-500 ml-1">/mois</span>
+                    )}
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <span className="px-3 py-1 rounded-full text-xs font-bold text-white" style={{ background: BLUE }}>
+                    {TYPE_LABELS[listing.type] || listing.type}
+                  </span>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold text-white" style={{ background: listing.transaction === 'vente' ? '#059669' : '#7c3aed' }}>
+                    {listing.transaction === 'vente' ? 'Vente' : 'Location'}
+                  </span>
+                </div>
+              </div>
+              <h1 className="text-xl font-bold text-gray-800 mb-1">{listing.title}</h1>
+              <p className="text-gray-500 text-sm flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {location}
+              </p>
+              <p className="text-gray-400 text-xs mt-1">
+                Publié le {new Date(listing.created_at).toLocaleDateString('fr-DZ')}
+              </p>
+            </div>
+
+            {/* Stats */}
+            <div className="bg-white rounded-xl p-5 shadow-sm border">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="flex flex-col items-center p-3 bg-blue-50 rounded-lg">
+                  <svg className="w-5 h-5 mb-1" fill="none" stroke={BLUE} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                  <span className="text-lg font-black" style={{ color: BLUE }}>{listing.surface}</span>
+                  <span className="text-xs text-gray-500">m² Surface</span>
+                </div>
+                {listing.rooms && (
+                  <div className="flex flex-col items-center p-3 bg-blue-50 rounded-lg">
+                    <svg className="w-5 h-5 mb-1" fill="none" stroke={BLUE} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span className="text-lg font-black" style={{ color: BLUE }}>{listing.rooms}</span>
+                    <span className="text-xs text-gray-500">Pièces</span>
+                  </div>
+                )}
+                {listing.bedrooms && (
+                  <div className="flex flex-col items-center p-3 bg-blue-50 rounded-lg">
+                    <svg className="w-5 h-5 mb-1" fill="none" stroke={BLUE} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    <span className="text-lg font-black" style={{ color: BLUE }}>{listing.bedrooms}</span>
+                    <span className="text-xs text-gray-500">Chambres</span>
+                  </div>
+                )}
+                {listing.bathrooms && (
+                  <div className="flex flex-col items-center p-3 bg-blue-50 rounded-lg">
+                    <svg className="w-5 h-5 mb-1" fill="none" stroke={BLUE} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h.01M8 11h.01M12 7h.01M12 11h.01M16 7h.01M16 11h.01M3 5h18M3 5v14a2 2 0 002 2h14a2 2 0 002-2V5" />
+                    </svg>
+                    <span className="text-lg font-black" style={{ color: BLUE }}>{listing.bathrooms}</span>
+                    <span className="text-xs text-gray-500">Salles de bain</span>
+                  </div>
+                )}
+                {listing.floor !== null && listing.floor !== undefined && (
+                  <div className="flex flex-col items-center p-3 bg-blue-50 rounded-lg">
+                    <span className="text-lg font-black" style={{ color: BLUE }}>F{listing.floor}</span>
+                    <span className="text-xs text-gray-500">Étage</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
+            {listing.description && (
+              <div className="bg-white rounded-xl p-5 shadow-sm border">
+                <h2 className="text-base font-bold text-gray-800 mb-3">Description</h2>
+                <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{listing.description}</p>
+              </div>
+            )}
+
+            {/* Équipements */}
+            {listing.amenities?.length > 0 && (
+              <div className="bg-white rounded-xl p-5 shadow-sm border">
+                <h2 className="text-base font-bold text-gray-800 mb-3">Équipements</h2>
+                <div className="grid grid-cols-2 gap-2">
+                  {listing.amenities.map(a => (
+                    <div key={a} className="flex items-center gap-2 text-sm text-gray-700">
+                      <span className="text-green-500 font-bold">✓</span>
+                      {AMENITY_LABELS[a] || a}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Informations */}
+            <div className="bg-white rounded-xl p-5 shadow-sm border">
+              <h2 className="text-base font-bold text-gray-800 mb-3">Informations</h2>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-gray-400 text-xs">Wilaya</p>
+                  <p className="font-semibold text-gray-700">{listing.wilaya}</p>
+                </div>
+                {listing.commune && (
+                  <div>
+                    <p className="text-gray-400 text-xs">Commune</p>
+                    <p className="font-semibold text-gray-700">{listing.commune}</p>
+                  </div>
+                )}
+                {listing.quartier && (
+                  <div>
+                    <p className="text-gray-400 text-xs">Quartier</p>
+                    <p className="font-semibold text-gray-700">{listing.quartier}</p>
+                  </div>
+                )}
+                {listing.document_type && (
+                  <div>
+                    <p className="text-gray-400 text-xs">Document</p>
+                    <p className="font-semibold text-gray-700">{listing.document_type}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-gray-400 text-xs">Type</p>
+                  <p className="font-semibold text-gray-700">{TYPE_LABELS[listing.type] || listing.type}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-xs">Transaction</p>
+                  <p className="font-semibold text-gray-700 capitalize">{listing.transaction}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ─── Colonne droite (sticky) ─── */}
+          <div className="w-full md:w-80 shrink-0">
+            <div className="bg-white rounded-xl shadow-sm border p-5 md:sticky md:top-6">
+              <div className="flex items-center gap-3 mb-4 pb-4 border-b">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg" style={{ background: BLUE }}>
+                  D
+                </div>
+                <div>
+                  <p className="font-bold text-gray-800 text-sm">Vendeur Darni</p>
+                  <p className="text-xs text-gray-400">Membre Darni</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {(listing.phone || listing.whatsapp) && (
+                  <a
+                    href={`tel:${listing.phone || listing.whatsapp}`}
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-white font-bold text-sm transition hover:opacity-90"
+                    style={{ background: BLUE }}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    Appeler
+                  </a>
+                )}
+
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-white font-bold text-sm transition hover:opacity-90"
+                  style={{ background: '#25D366' }}
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                  WhatsApp
+                </a>
+
+                <button
+                  onClick={share}
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border-2 text-gray-600 font-bold text-sm transition hover:bg-gray-50"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                  Partager
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-400 text-center mt-4">
+                Réf. annonce #{listing.id?.slice(0, 8).toUpperCase()}
+              </p>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* ─── Boutons mobile fixés en bas ─── */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex gap-3 z-50">
+        {(listing.phone || listing.whatsapp) && (
+          <a
+            href={`tel:${listing.phone || listing.whatsapp}`}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm"
+            style={{ background: BLUE }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            Appeler
+          </a>
+        )}
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm"
+          style={{ background: '#25D366' }}
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+          </svg>
+          WhatsApp
+        </a>
+      </div>
+
+      {/* ─── Modal toutes les photos ─── */}
+      {showAllPhotos && (
+        <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
+          <div className="flex items-center justify-between p-4">
+            <p className="text-white font-semibold">{activePhoto + 1} / {photos.length}</p>
+            <button onClick={() => setShowAllPhotos(false)} className="text-white text-2xl hover:text-gray-300">✕</button>
+          </div>
+          <div className="flex-1 flex items-center justify-center px-4">
+            <img src={photos[activePhoto]} alt="" className="max-h-full max-w-full object-contain rounded-lg" />
+          </div>
+          <div className="flex gap-2 p-4 overflow-x-auto">
+            {photos.map((p, i) => (
+              <img
+                key={i}
+                src={p}
+                alt=""
+                onClick={() => setActivePhoto(i)}
+                className="h-16 w-24 object-cover rounded cursor-pointer shrink-0 transition"
+                style={{ opacity: i === activePhoto ? 1 : 0.5, border: i === activePhoto ? '2px solid white' : 'none' }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }
