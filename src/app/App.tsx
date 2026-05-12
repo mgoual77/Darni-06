@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navbar } from "./components/Navbar";
 import { Home } from "./components/Home";
-import { ListingDetail } from "./components/ListingDetail";
+import ListingDetail from "./components/ListingDetail";
 import { SearchResults } from "./components/SearchResults";
 import { Profile } from "./components/Profile";
 import PostAnnonce from "./components/PostAnnonce";
