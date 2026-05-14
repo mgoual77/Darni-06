@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 
-// ✅ Wilayas triées alphabétiquement
 const WILAYAS = [
   'Adrar', 'Ain Defla', 'Ain Témouchent', 'Alger', 'Annaba',
   'Batna', 'Béchar', 'Béjaïa', 'Biskra', 'Blida',
@@ -30,17 +29,31 @@ const AMENITIES = [
   { key: 'cave',          label: 'Cave / Box'         },
 ]
 
-// ✅ Labels pour le titre auto
+const DOCUMENT_TYPES = [
+  { key: 'acte_notarie',   label: 'Acte notarié'              },
+  { key: 'livret_foncier', label: 'Livret foncier'             },
+  { key: 'sans_titre',     label: 'Sans titre (à régulariser)' },
+]
+
 const TYPE_LABELS: Record<string, string> = {
   appartement: 'Appartement', villa: 'Villa', bureau: 'Bureau',
   local: 'Local commercial', terrain: 'Terrain', autre: 'Bien',
+}
+
+// ✅ Formatage prix intelligent
+function formatPrice(raw: string): string {
+  const n = Number(raw.replace(/\s/g, ''))
+  if (!n) return ''
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(n % 1_000_000_000 === 0 ? 0 : 1)} Mds DA`
+  if (n >= 1_000_000)     return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)} M DA`
+  return `${n.toLocaleString('fr-DZ')} DA`
 }
 
 interface FormState {
   description: string
   type: string
   transaction: string
-  document_type: string
+  document_types: string[]  // ✅ multi-select
   price: string
   surface: string
   rooms: string
@@ -57,7 +70,7 @@ interface FormState {
 
 const initialForm: FormState = {
   description: '', type: 'appartement', transaction: 'vente',
-  document_type: '', price: '', surface: '', rooms: '', bedrooms: '',
+  document_types: [], price: '', surface: '', rooms: '', bedrooms: '',
   bathrooms: '', floor: '', wilaya: '', commune: '', quartier: '', amenities: [],
   phone: '', whatsapp: '',
 }
@@ -68,15 +81,13 @@ function LimiteAtteinte({ onBack }: { onBack: () => void }) {
   const navigate = useNavigate()
   return (
     <div style={{ textAlign: 'center', padding: '40px 24px' }}>
-      <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 32 }}>
-        🔒
-      </div>
+      <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 32 }}>🔒</div>
       <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: 10 }}>Limite gratuite atteinte</h2>
       <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.7, marginBottom: 6 }}>
         Vous avez atteint la limite de <strong>3 annonces gratuites</strong>.
       </p>
       <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.7, marginBottom: 28 }}>
-        Gérez vos annonces existantes ou passez en <strong style={{ color: BLUE }}>Darni Pro</strong> pour publier en illimité.
+        Passez en <strong style={{ color: BLUE }}>Darni Pro</strong> pour publier en illimité.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 320, margin: '0 auto' }}>
         <button onClick={() => navigate('/mes-annonces')}
@@ -120,6 +131,15 @@ export default function PostAnnonce() {
   const set = (field: keyof FormState, value: string) =>
     setForm(prev => ({ ...prev, [field]: value }))
 
+  // ✅ Toggle document type (multi-select)
+  const toggleDocType = (key: string) =>
+    setForm(prev => ({
+      ...prev,
+      document_types: prev.document_types.includes(key)
+        ? prev.document_types.filter(d => d !== key)
+        : [...prev.document_types, key],
+    }))
+
   const toggleAmenity = (key: string) =>
     setForm(prev => ({
       ...prev,
@@ -161,7 +181,6 @@ export default function PostAnnonce() {
     setLoading(true); setError('')
 
     try {
-      // ✅ Titre auto-généré
       const location  = form.commune.trim() || form.wilaya
       const autoTitle = `${TYPE_LABELS[form.type] || form.type} ${form.surface}m² à ${location}`
 
@@ -178,26 +197,27 @@ export default function PostAnnonce() {
       }
 
       const { error: insertError } = await supabase.from('listings').insert({
-        user_id:       user.id,
-        title:         autoTitle,  // ✅ titre auto
-        description:   form.description.trim(),
-        type:          form.type,
-        transaction:   form.transaction,
-        document_type: form.document_type || null,
-        price:         Number(form.price.replace(/\s/g, '')),
-        surface:       parseFloat(form.surface),
-        rooms:         form.rooms     ? parseInt(form.rooms)     : null,
-        bedrooms:      form.bedrooms  ? parseInt(form.bedrooms)  : null,
-        bathrooms:     form.bathrooms ? parseInt(form.bathrooms) : null,
-        floor:         form.floor     ? parseInt(form.floor)     : null,
-        wilaya:        form.wilaya,
-        commune:       form.commune.trim()  || null,
-        quartier:      form.quartier.trim() || null,
-        amenities:     form.amenities,
-        photos:        photoUrls,
-        phone:         form.phone.trim(),
-        whatsapp:      form.whatsapp.trim() || null,
-        status:        'active',
+        user_id:        user.id,
+        title:          autoTitle,
+        description:    form.description.trim(),
+        type:           form.type,
+        transaction:    form.transaction,
+        document_type:  form.document_types[0] || null,   // compat colonne existante
+        document_types: form.document_types,               // ✅ nouvelle colonne multi
+        price:          Number(form.price.replace(/\s/g, '')),
+        surface:        parseFloat(form.surface),
+        rooms:          form.rooms     ? parseInt(form.rooms)     : null,
+        bedrooms:       form.bedrooms  ? parseInt(form.bedrooms)  : null,
+        bathrooms:      form.bathrooms ? parseInt(form.bathrooms) : null,
+        floor:          form.floor     ? parseInt(form.floor)     : null,
+        wilaya:         form.wilaya,
+        commune:        form.commune.trim()  || null,
+        quartier:       form.quartier.trim() || null,
+        amenities:      form.amenities,
+        photos:         photoUrls,
+        phone:          form.phone.trim(),
+        whatsapp:       form.whatsapp.trim() || null,
+        status:         'active',
       })
 
       if (insertError) {
@@ -222,7 +242,6 @@ export default function PostAnnonce() {
 
   const steps = ['Type de bien', 'Caractéristiques', 'Localisation', 'Photos & Prix']
 
-  // ✅ Aperçu titre en temps réel
   const previewTitle = form.surface && form.wilaya
     ? `${TYPE_LABELS[form.type] || form.type} ${form.surface}m² à ${form.commune.trim() || form.wilaya}`
     : null
@@ -273,7 +292,7 @@ export default function PostAnnonce() {
         <div className="bg-white rounded-xl shadow-sm border p-6">
           {limitReached ? <LimiteAtteinte onBack={() => setLimitReached(false)} /> : (
             <>
-              {/* ÉTAPE 1 — Type de bien (sans champ titre) */}
+              {/* ─── ÉTAPE 1 ─── */}
               {step === 1 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Type de bien</h2>
@@ -311,26 +330,41 @@ export default function PostAnnonce() {
                     </div>
                   </div>
 
+                  {/* ✅ Document multi-select */}
                   <div>
-                    <label className="text-sm font-semibold text-gray-600 mb-2 block">Type de document</label>
-                    <div className="flex gap-2">
-                      {[
-                        { key: 'acte_notarie',   label: 'Acte notarié'              },
-                        { key: 'livret_foncier', label: 'Livret foncier'             },
-                        { key: 'sans_titre',     label: 'Sans titre (à régulariser)' },
-                      ].map(({ key, label }) => (
-                        <button key={key} onClick={() => set('document_type', key)}
-                          className="flex-1 py-2.5 rounded-lg border-2 text-xs font-semibold transition-all"
-                          style={{ borderColor: form.document_type === key ? BLUE : '#e5e7eb', background: form.document_type === key ? '#eff4ff' : 'white', color: form.document_type === key ? BLUE : '#6b7280' }}>
-                          {label}
-                        </button>
-                      ))}
+                    <label className="text-sm font-semibold text-gray-600 mb-2 block">
+                      Type de document <span className="text-gray-400 font-normal">(plusieurs choix possibles)</span>
+                    </label>
+                    <div className="flex flex-col gap-2">
+                      {DOCUMENT_TYPES.map(({ key, label }) => {
+                        const selected = form.document_types.includes(key)
+                        return (
+                          <button key={key} onClick={() => toggleDocType(key)}
+                            className="flex items-center gap-3 py-3 px-4 rounded-lg border-2 text-sm font-semibold transition-all text-left"
+                            style={{ borderColor: selected ? BLUE : '#e5e7eb', background: selected ? '#eff4ff' : 'white', color: selected ? BLUE : '#6b7280' }}>
+                            {/* Checkbox visuel */}
+                            <span style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${selected ? BLUE : '#d1d5db'}`, background: selected ? BLUE : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
+                              {selected && (
+                                <svg width={11} height={11} fill="none" stroke="#fff" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </span>
+                            {label}
+                          </button>
+                        )
+                      })}
                     </div>
+                    {form.document_types.length > 0 && (
+                      <p className="text-xs mt-2" style={{ color: BLUE }}>
+                        ✓ {form.document_types.length} document{form.document_types.length > 1 ? 's' : ''} sélectionné{form.document_types.length > 1 ? 's' : ''}
+                      </p>
+                    )}
                   </div>
 
-                  {/* ✅ Info titre auto */}
+                  {/* Info titre auto */}
                   <div className="p-3 rounded-lg text-xs" style={{ background: '#EEF2FF', color: '#374151' }}>
-                    ℹ️ Le titre de votre annonce sera généré automatiquement à partir du type de bien, la superficie et la localisation.
+                    ℹ️ Le titre sera généré automatiquement : <em>Type + superficie + localisation</em>
                     {previewTitle && (
                       <p className="mt-1 font-semibold" style={{ color: BLUE }}>Aperçu : {previewTitle}</p>
                     )}
@@ -338,7 +372,7 @@ export default function PostAnnonce() {
                 </div>
               )}
 
-              {/* ÉTAPE 2 */}
+              {/* ─── ÉTAPE 2 ─── */}
               {step === 2 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Caractéristiques</h2>
@@ -378,7 +412,7 @@ export default function PostAnnonce() {
                 </div>
               )}
 
-              {/* ÉTAPE 3 */}
+              {/* ─── ÉTAPE 3 ─── */}
               {step === 3 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Localisation</h2>
@@ -392,21 +426,22 @@ export default function PostAnnonce() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-semibold text-gray-600 mb-1.5 block">Commune</label>
+                    <label className="text-sm font-semibold text-gray-600 mb-1.5 block">Commune / Ville</label>
                     <input type="text" value={form.commune} onChange={e => set('commune', e.target.value)}
-                      placeholder="Ex: Bab El Oued"
+                      placeholder="Ex: Bab El Oued, Dely Brahim, Hydra..."
                       className="w-full border-2 rounded-lg px-3 py-2.5 text-sm outline-none"
                       style={{ borderColor: form.commune ? BLUE : '#e5e7eb' }} />
                   </div>
                   <div>
-                    <label className="text-sm font-semibold text-gray-600 mb-1.5 block">Quartier</label>
+                    <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
+                      Quartier <span className="text-gray-400 font-normal">(optionnel)</span>
+                    </label>
                     <input type="text" value={form.quartier} onChange={e => set('quartier', e.target.value)}
-                      placeholder="Ex: Hydra, Les Pins Maritimes..."
+                      placeholder="Ex: Les Pins Maritimes, Cité Djamel..."
                       className="w-full border-2 rounded-lg px-3 py-2.5 text-sm outline-none"
                       style={{ borderColor: form.quartier ? BLUE : '#e5e7eb' }} />
                   </div>
 
-                  {/* ✅ Aperçu titre en temps réel */}
                   {previewTitle && (
                     <div className="p-3 rounded-lg" style={{ background: '#EEF2FF' }}>
                       <p className="text-xs text-gray-500 mb-1">Titre généré automatiquement :</p>
@@ -416,12 +451,11 @@ export default function PostAnnonce() {
                 </div>
               )}
 
-              {/* ÉTAPE 4 */}
+              {/* ─── ÉTAPE 4 ─── */}
               {step === 4 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Photos & Prix</h2>
 
-                  {/* ✅ Rappel titre */}
                   {previewTitle && (
                     <div className="p-3 rounded-lg" style={{ background: '#EEF2FF' }}>
                       <p className="text-xs text-gray-500 mb-1">Votre annonce sera publiée sous :</p>
@@ -478,9 +512,10 @@ export default function PostAnnonce() {
                         {form.transaction === 'location' ? 'DA/mois' : 'DA'}
                       </span>
                     </div>
+                    {/* ✅ Formatage prix intelligent */}
                     {form.price && (
-                      <p className="text-xs mt-1" style={{ color: BLUE }}>
-                        ≈ {Number(form.price.replace(/\s/g, '') || '0').toLocaleString('fr-DZ')} DA
+                      <p className="text-xs mt-1 font-semibold" style={{ color: BLUE }}>
+                        ≈ {formatPrice(form.price)}
                       </p>
                     )}
                   </div>
