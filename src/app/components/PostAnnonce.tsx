@@ -3,15 +3,18 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 
+// ✅ Wilayas triées alphabétiquement
 const WILAYAS = [
-  'Adrar', 'Chlef', 'Laghouat', 'Oum El Bouaghi', 'Batna', 'Béjaïa', 'Biskra',
-  'Béchar', 'Blida', 'Bouira', 'Tamanrasset', 'Tébessa', 'Tlemcen', 'Tiaret',
-  'Tizi Ouzou', 'Alger', 'Djelfa', 'Jijel', 'Sétif', 'Saïda', 'Skikda',
-  'Sidi Bel Abbès', 'Annaba', 'Guelma', 'Constantine', 'Médéa', 'Mostaganem',
-  "M'Sila", 'Mascara', 'Ouargla', 'Oran', 'El Bayadh', 'Illizi',
-  'Bordj Bou Arréridj', 'Boumerdès', 'El Tarf', 'Tindouf', 'Tissemsilt',
-  'El Oued', 'Khenchela', 'Souk Ahras', 'Tipaza', 'Mila', 'Ain Defla',
-  'Naâma', 'Ain Témouchent', 'Ghardaïa', 'Relizane',
+  'Adrar', 'Ain Defla', 'Ain Témouchent', 'Alger', 'Annaba',
+  'Batna', 'Béchar', 'Béjaïa', 'Biskra', 'Blida',
+  'Bordj Bou Arréridj', 'Bouira', 'Boumerdès', 'Chlef', 'Constantine',
+  'Djelfa', 'El Bayadh', 'El Oued', 'El Tarf', 'Ghardaïa',
+  'Guelma', 'Illizi', 'Jijel', 'Khenchela', 'Laghouat',
+  'Mascara', 'Médéa', 'Mila', 'Mostaganem', "M'Sila",
+  'Naâma', 'Oran', 'Ouargla', 'Oum El Bouaghi', 'Relizane',
+  'Saïda', 'Sétif', 'Sidi Bel Abbès', 'Skikda', 'Souk Ahras',
+  'Tamanrasset', 'Tébessa', 'Tiaret', 'Tindouf', 'Tipaza',
+  'Tissemsilt', 'Tizi Ouzou', 'Tlemcen',
 ]
 
 const AMENITIES = [
@@ -27,8 +30,13 @@ const AMENITIES = [
   { key: 'cave',          label: 'Cave / Box'         },
 ]
 
+// ✅ Labels pour le titre auto
+const TYPE_LABELS: Record<string, string> = {
+  appartement: 'Appartement', villa: 'Villa', bureau: 'Bureau',
+  local: 'Local commercial', terrain: 'Terrain', autre: 'Bien',
+}
+
 interface FormState {
-  title: string
   description: string
   type: string
   transaction: string
@@ -48,7 +56,7 @@ interface FormState {
 }
 
 const initialForm: FormState = {
-  title: '', description: '', type: 'appartement', transaction: 'vente',
+  description: '', type: 'appartement', transaction: 'vente',
   document_type: '', price: '', surface: '', rooms: '', bedrooms: '',
   bathrooms: '', floor: '', wilaya: '', commune: '', quartier: '', amenities: [],
   phone: '', whatsapp: '',
@@ -137,7 +145,6 @@ export default function PostAnnonce() {
 
   const validateStep = () => {
     setError('')
-    if (step === 1 && !form.title.trim()) { setError('Le titre est obligatoire.'); return false }
     if (step === 2 && !form.surface)      { setError('La superficie est obligatoire.'); return false }
     if (step === 3 && !form.wilaya)       { setError('La wilaya est obligatoire.'); return false }
     if (step === 4) {
@@ -152,7 +159,12 @@ export default function PostAnnonce() {
   const handleSubmit = async () => {
     if (!validateStep() || !user) return
     setLoading(true); setError('')
+
     try {
+      // ✅ Titre auto-généré
+      const location  = form.commune.trim() || form.wilaya
+      const autoTitle = `${TYPE_LABELS[form.type] || form.type} ${form.surface}m² à ${location}`
+
       const photoUrls: string[] = []
       for (const photo of photos) {
         const ext      = photo.name.split('.').pop()?.toLowerCase() || 'jpg'
@@ -167,7 +179,7 @@ export default function PostAnnonce() {
 
       const { error: insertError } = await supabase.from('listings').insert({
         user_id:       user.id,
-        title:         form.title.trim(),
+        title:         autoTitle,  // ✅ titre auto
         description:   form.description.trim(),
         type:          form.type,
         transaction:   form.transaction,
@@ -209,6 +221,11 @@ export default function PostAnnonce() {
   }
 
   const steps = ['Type de bien', 'Caractéristiques', 'Localisation', 'Photos & Prix']
+
+  // ✅ Aperçu titre en temps réel
+  const previewTitle = form.surface && form.wilaya
+    ? `${TYPE_LABELS[form.type] || form.type} ${form.surface}m² à ${form.commune.trim() || form.wilaya}`
+    : null
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: 'Lato, sans-serif' }}>
@@ -256,10 +273,11 @@ export default function PostAnnonce() {
         <div className="bg-white rounded-xl shadow-sm border p-6">
           {limitReached ? <LimiteAtteinte onBack={() => setLimitReached(false)} /> : (
             <>
-              {/* ÉTAPE 1 */}
+              {/* ÉTAPE 1 — Type de bien (sans champ titre) */}
               {step === 1 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Type de bien</h2>
+
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">Transaction *</label>
                     <div className="flex gap-3">
@@ -272,6 +290,7 @@ export default function PostAnnonce() {
                       ))}
                     </div>
                   </div>
+
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">Catégorie *</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -291,6 +310,7 @@ export default function PostAnnonce() {
                       ))}
                     </div>
                   </div>
+
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">Type de document</label>
                     <div className="flex gap-2">
@@ -307,13 +327,13 @@ export default function PostAnnonce() {
                       ))}
                     </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-semibold text-gray-600 mb-1.5 block">Titre de l'annonce *</label>
-                    <input type="text" value={form.title} onChange={e => set('title', e.target.value)}
-                      placeholder="Ex: Appartement F3 lumineux avec vue mer à Oran" maxLength={120}
-                      className="w-full border-2 rounded-lg px-3 py-2.5 text-sm outline-none transition-all"
-                      style={{ borderColor: form.title ? BLUE : '#e5e7eb' }} />
-                    <p className="text-xs text-gray-400 mt-1">{form.title.length}/120 caractères</p>
+
+                  {/* ✅ Info titre auto */}
+                  <div className="p-3 rounded-lg text-xs" style={{ background: '#EEF2FF', color: '#374151' }}>
+                    ℹ️ Le titre de votre annonce sera généré automatiquement à partir du type de bien, la superficie et la localisation.
+                    {previewTitle && (
+                      <p className="mt-1 font-semibold" style={{ color: BLUE }}>Aperçu : {previewTitle}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -385,6 +405,14 @@ export default function PostAnnonce() {
                       className="w-full border-2 rounded-lg px-3 py-2.5 text-sm outline-none"
                       style={{ borderColor: form.quartier ? BLUE : '#e5e7eb' }} />
                   </div>
+
+                  {/* ✅ Aperçu titre en temps réel */}
+                  {previewTitle && (
+                    <div className="p-3 rounded-lg" style={{ background: '#EEF2FF' }}>
+                      <p className="text-xs text-gray-500 mb-1">Titre généré automatiquement :</p>
+                      <p className="text-sm font-bold" style={{ color: BLUE }}>{previewTitle}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -392,6 +420,14 @@ export default function PostAnnonce() {
               {step === 4 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Photos & Prix</h2>
+
+                  {/* ✅ Rappel titre */}
+                  {previewTitle && (
+                    <div className="p-3 rounded-lg" style={{ background: '#EEF2FF' }}>
+                      <p className="text-xs text-gray-500 mb-1">Votre annonce sera publiée sous :</p>
+                      <p className="text-sm font-bold" style={{ color: BLUE }}>{previewTitle}</p>
+                    </div>
+                  )}
 
                   {/* Photos */}
                   <div>
@@ -419,7 +455,7 @@ export default function PostAnnonce() {
                             <img src={src} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
                             {i === 0 && <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded font-semibold">Principale</div>}
                             <button onClick={() => removePhoto(i)}
-                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                              className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                               ×
                             </button>
                           </div>
@@ -449,7 +485,7 @@ export default function PostAnnonce() {
                     )}
                   </div>
 
-                  {/* ✅ Téléphone */}
+                  {/* Téléphone */}
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
                       Téléphone * <span className="text-gray-400 font-normal">(affiché aux acheteurs)</span>
@@ -463,7 +499,7 @@ export default function PostAnnonce() {
                     </div>
                   </div>
 
-                  {/* ✅ WhatsApp */}
+                  {/* WhatsApp */}
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
                       WhatsApp <span className="text-gray-400 font-normal">(optionnel)</span>
