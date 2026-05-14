@@ -5,6 +5,7 @@ import ListingDetail from "./components/ListingDetail";
 import { SearchResults } from "./components/SearchResults";
 import { Profile } from "./components/Profile";
 import PostAnnonce from "./components/PostAnnonce";
+import MesAnnonces from "./components/MesAnnonces";
 
 export default function App() {
   return (
@@ -13,14 +14,12 @@ export default function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route
-            path="/listing/:id"
-            element={<ListingDetail />}
-          />
+          <Route path="/listing/:id" element={<ListingDetail />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/publish" element={<PostAnnonce />} />
           <Route path="/poster" element={<PostAnnonce />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/mes-annonces" element={<MesAnnonces />} />
         </Routes>
       </div>
     </BrowserRouter>
