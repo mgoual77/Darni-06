@@ -42,13 +42,13 @@ const DOC_LABELS: Record<string, string> = {
   acte_notarie: 'Acte notarié', livret_foncier: 'Livret foncier', sans_titre: 'Sans titre',
 }
 
-const BLUE      = '#1B4FD8'
-const WA_GREEN  = '#1DA462'
-const DARK      = '#111827'
-const GRAY      = '#6B7280'
-const GRAY_LT   = '#9CA3AF'
-const BORDER    = '#E5E7EB'
-const BG        = '#F3F4F6'
+const BLUE     = '#1B4FD8'
+const WA_GREEN = '#1DA462'
+const DARK     = '#111827'
+const GRAY     = '#6B7280'
+const GRAY_LT  = '#9CA3AF'
+const BORDER   = '#E5E7EB'
+const BG       = '#F3F4F6'
 
 function extractPhotos(raw: any): string[] {
   const fb = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900'
@@ -87,10 +87,10 @@ const IcoHeart = ({ filled }: { filled: boolean }) => (
 function RecoCard({ listing, onClick }: { listing: Listing; onClick: () => void }) {
   return (
     <div onClick={onClick}
-      style={{ background: '#fff', borderRadius: 12, border: `1px solid ${BORDER}`, overflow: 'hidden', cursor: 'pointer', flexShrink: 0, width: 250, transition: 'box-shadow 0.2s, transform 0.2s' }}
+      style={{ background: '#fff', borderRadius: 12, border: `1px solid ${BORDER}`, overflow: 'hidden', cursor: 'pointer', flexShrink: 0, width: 240, transition: 'box-shadow 0.2s, transform 0.2s' }}
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px rgba(0,0,0,0.10)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)' }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)' }}>
-      <div style={{ height: 155, overflow: 'hidden' }}>
+      <div style={{ height: 145, overflow: 'hidden' }}>
         <img src={firstPhoto(listing.photos)} alt={listing.title}
           style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
           onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'}
@@ -98,19 +98,16 @@ function RecoCard({ listing, onClick }: { listing: Listing; onClick: () => void 
           onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400' }} />
       </div>
       <div style={{ padding: '12px 14px' }}>
-        <p style={{ fontSize: 17, fontWeight: 900, color: DARK, margin: '0 0 4px', letterSpacing: '-0.02em' }}>
+        <p style={{ fontSize: 16, fontWeight: 900, color: DARK, margin: '0 0 3px', letterSpacing: '-0.02em' }}>
           {formatPrice(listing.price, listing.transaction)}
         </p>
-        <p style={{ fontSize: 12, color: GRAY, margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <p style={{ fontSize: 12, color: GRAY, margin: '0 0 5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {listing.title}
         </p>
-        <div style={{ display: 'flex', gap: 10, fontSize: 12, color: GRAY }}>
+        <div style={{ display: 'flex', gap: 8, fontSize: 11, color: GRAY }}>
           {listing.surface  && <span><strong style={{ color: DARK }}>{listing.surface}</strong> m²</span>}
           {listing.bedrooms && <span><strong style={{ color: DARK }}>{listing.bedrooms}</strong> ch.</span>}
         </div>
-        <p style={{ fontSize: 11, color: GRAY_LT, margin: '5px 0 0' }}>
-          📍 {[listing.commune, listing.wilaya].filter(Boolean).join(', ')}
-        </p>
       </div>
     </div>
   )
@@ -162,13 +159,17 @@ export default function ListingDetail() {
     </div>
   )
 
-  const photos  = extractPhotos(listing.photos)
-  const waLink  = buildWA(listing.whatsapp ?? listing.phone)
-  const telLink = buildTel(listing.phone ?? listing.whatsapp)
+  const photos   = extractPhotos(listing.photos)
+  const waLink   = buildWA(listing.whatsapp ?? listing.phone)
+  const telLink  = buildTel(listing.phone ?? listing.whatsapp)
   const location = [listing.quartier, listing.commune, listing.wilaya].filter(Boolean).join(', ')
-  const docs    = listing.document_types?.length ? listing.document_types : listing.document_type ? [listing.document_type] : []
-  const refCode = listing.id.slice(0, 8).toUpperCase()
-  const descCut = 300
+  const docs     = listing.document_types?.length ? listing.document_types : listing.document_type ? [listing.document_type] : []
+  const refCode  = listing.id.slice(0, 8).toUpperCase()
+  const descCut  = 300
+
+  // ✅ URL carte Google Maps Embed (gratuit, sans API key)
+  const mapQuery = encodeURIComponent([listing.commune, listing.wilaya, 'Algérie'].filter(Boolean).join(', '))
+  const mapUrl   = `https://maps.google.com/maps?q=${mapQuery}&z=14&output=embed`
 
   const stats = [
     listing.surface   ? { icon: <IcoArea />, val: `${listing.surface} m²` } : null,
@@ -178,18 +179,19 @@ export default function ListingDetail() {
     listing.floor !== null && listing.floor !== undefined ? { icon: <IcoArea />, val: `Étage ${listing.floor}` } : null,
   ].filter(Boolean) as { icon: React.ReactNode; val: string }[]
 
+  // ✅ Tableau informations compact
   const infoRows = [
-    { label: 'Type',           value: TYPE_LABELS[listing.type] || listing.type },
-    { label: 'Transaction',    value: listing.transaction === 'vente' ? 'Vente' : 'Location' },
-    { label: 'Wilaya',         value: listing.wilaya },
-    { label: 'Commune',        value: listing.commune || '—' },
-    listing.quartier  ? { label: 'Quartier',      value: listing.quartier }          : null,
-    listing.surface   ? { label: 'Superficie',    value: `${listing.surface} m²` }   : null,
-    listing.rooms     ? { label: 'Nb pièces',     value: `${listing.rooms}` }         : null,
-    listing.bedrooms  ? { label: 'Chambres',      value: `${listing.bedrooms}` }      : null,
-    listing.bathrooms ? { label: 'Salles de bain',value: `${listing.bathrooms}` }     : null,
+    { label: 'Type',         value: TYPE_LABELS[listing.type] || listing.type },
+    { label: 'Transaction',  value: listing.transaction === 'vente' ? 'Vente' : 'Location' },
+    { label: 'Wilaya',       value: listing.wilaya },
+    { label: 'Commune',      value: listing.commune || '—' },
+    listing.quartier  ? { label: 'Quartier',     value: listing.quartier }        : null,
+    listing.surface   ? { label: 'Superficie',   value: `${listing.surface} m²` } : null,
+    listing.rooms     ? { label: 'Pièces',       value: `${listing.rooms}` }       : null,
+    listing.bedrooms  ? { label: 'Chambres',     value: `${listing.bedrooms}` }    : null,
+    listing.bathrooms ? { label: 'SDB',          value: `${listing.bathrooms}` }   : null,
     listing.floor !== null && listing.floor !== undefined ? { label: 'Étage', value: `${listing.floor}` } : null,
-    docs.length > 0   ? { label: 'Documents',     value: docs.map(d => DOC_LABELS[d] || d).join(' · ') } : null,
+    docs.length > 0   ? { label: 'Document',     value: docs.map(d => DOC_LABELS[d] || d).join(' · ') } : null,
   ].filter(Boolean) as { label: string; value: string }[]
 
   const share = () => {
@@ -200,10 +202,9 @@ export default function ListingDetail() {
   return (
     <div style={{ minHeight: '100vh', background: BG, fontFamily: 'Lato, sans-serif' }}>
       <style>{`
-        @keyframes spin    { to { transform: rotate(360deg); } }
-        @keyframes fade    { from { opacity: 0 } to { opacity: 1 } }
-        /* ✅ Barre mobile uniquement sur petit écran */
-        .mobile-cta        { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+        .mobile-cta { display: none; }
         @media (max-width: 768px) { .mobile-cta { display: flex !important; } }
       `}</style>
 
@@ -224,10 +225,9 @@ export default function ListingDetail() {
         </div>
       </div>
 
-      {/* Galerie — fond gris clair */}
+      {/* Galerie */}
       <div style={{ background: BG, padding: '4px 0' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '2fr 1fr', height: 460, gap: 4, padding: '0 24px' }}>
-          {/* Grande photo */}
           <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px 0 0 12px', cursor: 'pointer', background: '#D1D5DB' }}
             onClick={() => setShowModal(true)}>
             <img src={photos[0]} alt={listing.title}
@@ -243,10 +243,9 @@ export default function ListingDetail() {
               Voir les {photos.length} photos
             </button>
           </div>
-          {/* 3 photos stacked */}
           <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr 1fr', gap: 4 }}>
             {[1, 2, 3].map(i => (
-              <div key={i} style={{ position: 'relative', overflow: 'hidden', borderRadius: i === 1 ? '0 12px 0 0' : i === 3 ? '0 0 12px 0' : '0', cursor: 'pointer', background: '#D1D5DB' }}
+              <div key={i} style={{ position: 'relative', overflow: 'hidden', borderRadius: i === 1 ? '0 12px 0 0' : i === 3 ? '0 0 12px 0' : '0', cursor: 'pointer', background: '#CBD5E1' }}
                 onClick={() => { setActivePhoto(i); setShowModal(true) }}>
                 {photos[i] ? (
                   <img src={photos[i]} alt={`Photo ${i + 1}`}
@@ -262,7 +261,7 @@ export default function ListingDetail() {
                   </div>
                 )}
                 {i === 3 && photos.length > 4 && (
-                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ color: '#fff', fontWeight: 700, fontSize: 13 }}>+{photos.length - 3} photos</span>
                   </div>
                 )}
@@ -298,8 +297,7 @@ export default function ListingDetail() {
                 </button>
                 <button onClick={() => setSaved(v => !v)}
                   style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', border: `1.5px solid ${saved ? '#FCA5A5' : BORDER}`, borderRadius: 8, background: saved ? '#FEF2F2' : '#fff', color: saved ? '#EF4444' : '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
-                  <IcoHeart filled={saved} />
-                  {saved ? 'Sauvegardé' : 'Sauvegarder'}
+                  <IcoHeart filled={saved} /> {saved ? 'Sauvegardé' : 'Sauvegarder'}
                 </button>
               </div>
             </div>
@@ -334,11 +332,11 @@ export default function ListingDetail() {
 
           {/* Équipements */}
           {listing.amenities?.length > 0 && (
-            <div style={{ background: '#fff', borderRadius: 14, padding: '24px 32px', border: `1px solid ${BORDER}` }}>
-              <h2 style={{ fontSize: 17, fontWeight: 700, color: DARK, margin: '0 0 16px' }}>Équipements</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(175px, 1fr))', gap: 10 }}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: '22px 32px', border: `1px solid ${BORDER}` }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 14px' }}>Équipements</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
                 {listing.amenities.map(a => (
-                  <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#374151', padding: '10px 14px', border: `1px solid ${BORDER}`, borderRadius: 8, background: BG }}>
+                  <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: '#374151', padding: '9px 12px', border: `1px solid ${BORDER}`, borderRadius: 8, background: BG }}>
                     <IcoCheck /> {AMENITY_LABELS[a] || a}
                   </div>
                 ))}
@@ -348,8 +346,8 @@ export default function ListingDetail() {
 
           {/* Description */}
           {listing.description && (
-            <div style={{ background: '#fff', borderRadius: 14, padding: '24px 32px', border: `1px solid ${BORDER}` }}>
-              <h2 style={{ fontSize: 17, fontWeight: 700, color: DARK, margin: '0 0 14px' }}>Description</h2>
+            <div style={{ background: '#fff', borderRadius: 14, padding: '22px 32px', border: `1px solid ${BORDER}` }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 12px' }}>Description</h2>
               <p style={{ fontSize: 14, color: '#4B5563', lineHeight: 1.8, margin: 0, whiteSpace: 'pre-line' }}>
                 {showFullDesc || listing.description.length <= descCut
                   ? listing.description
@@ -364,26 +362,53 @@ export default function ListingDetail() {
             </div>
           )}
 
-          {/* ✅ Informations — tableau centré */}
-          <div style={{ background: '#fff', borderRadius: 14, padding: '24px 32px', border: `1px solid ${BORDER}` }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: DARK, margin: '0 0 18px' }}>Informations du bien</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
-              {infoRows.map((row, i) => (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '14px 10px', borderBottom: `1px solid ${BORDER}`, borderRight: i % 2 === 0 ? `1px solid ${BORDER}` : 'none' }}>
-                  <span style={{ fontSize: 11, color: GRAY_LT, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>{row.label}</span>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: DARK }}>{row.value}</span>
-                </div>
-              ))}
+          {/* ✅ Informations — tableau compact propre */}
+          <div style={{ background: '#fff', borderRadius: 14, padding: '22px 32px', border: `1px solid ${BORDER}` }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 14px' }}>Informations du bien</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <tbody>
+                {infoRows.map((row, i) => (
+                  <tr key={i} style={{ borderBottom: i < infoRows.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
+                    <td style={{ padding: '9px 0', color: GRAY, fontWeight: 500, width: '40%' }}>{row.label}</td>
+                    <td style={{ padding: '9px 0', color: DARK, fontWeight: 700, textAlign: 'right' }}>{row.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ✅ Carte Google Maps */}
+          <div style={{ background: '#fff', borderRadius: 14, overflow: 'hidden', border: `1px solid ${BORDER}` }}>
+            <div style={{ padding: '18px 32px 14px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 4px' }}>Localisation</h2>
+              <p style={{ fontSize: 13, color: GRAY, margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <IcoPin /> {location}
+              </p>
+            </div>
+            <iframe
+              src={mapUrl}
+              width="100%"
+              height="320"
+              style={{ border: 'none', display: 'block' }}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Localisation du bien"
+            />
+            <div style={{ padding: '10px 32px 14px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+              <a href={`https://maps.google.com/?q=${mapQuery}`} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: 12, color: BLUE, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                Ouvrir dans Google Maps →
+              </a>
             </div>
           </div>
 
           {/* Recommandations */}
           {similar.length > 0 && (
-            <div style={{ background: '#fff', borderRadius: 14, padding: '24px 32px', border: `1px solid ${BORDER}` }}>
-              <h2 style={{ fontSize: 17, fontWeight: 700, color: DARK, margin: '0 0 20px' }}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: '22px 32px', border: `1px solid ${BORDER}` }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 16px' }}>
                 Biens similaires à {listing.wilaya}
               </h2>
-              <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8 }}>
+              <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 6 }}>
                 {similar.map(s => (
                   <RecoCard key={s.id} listing={s} onClick={() => { navigate(`/listing/${s.id}`); window.scrollTo(0, 0) }} />
                 ))}
@@ -392,60 +417,59 @@ export default function ListingDetail() {
           )}
         </div>
 
-        {/* Sidebar droite */}
-        <div style={{ width: 340, flexShrink: 0 }}>
+        {/* Sidebar */}
+        <div style={{ width: 330, flexShrink: 0 }}>
           <div style={{ background: '#fff', borderRadius: 14, border: `1px solid ${BORDER}`, boxShadow: '0 4px 24px rgba(0,0,0,0.07)', overflow: 'hidden', position: 'sticky', top: 20 }}>
-            <div style={{ padding: '20px 24px 16px', borderBottom: `1px solid ${BORDER}` }}>
+            <div style={{ padding: '20px 22px 16px', borderBottom: `1px solid ${BORDER}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                <div style={{ width: 46, height: 46, borderRadius: '50%', background: BLUE, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 18, flexShrink: 0 }}>D</div>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: BLUE, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 17, flexShrink: 0 }}>D</div>
                 <div>
-                  <p style={{ fontWeight: 700, color: DARK, fontSize: 15, margin: '0 0 2px' }}>Vendeur Darni</p>
-                  <p style={{ fontSize: 12, color: GRAY_LT, margin: 0 }}>✓ Membre vérifié</p>
+                  <p style={{ fontWeight: 700, color: DARK, fontSize: 14, margin: '0 0 2px' }}>Vendeur Darni</p>
+                  <p style={{ fontSize: 11, color: GRAY_LT, margin: 0 }}>✓ Membre vérifié</p>
                 </div>
               </div>
-              <div style={{ background: BG, borderRadius: 10, padding: '12px 16px' }}>
+              <div style={{ background: BG, borderRadius: 10, padding: '12px 14px' }}>
                 <p style={{ fontSize: 10, color: GRAY, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 }}>Prix demandé</p>
-                <p style={{ fontSize: 22, fontWeight: 900, color: DARK, margin: 0, letterSpacing: '-0.02em' }}>
+                <p style={{ fontSize: 20, fontWeight: 900, color: DARK, margin: 0, letterSpacing: '-0.02em' }}>
                   {formatPrice(listing.price, listing.transaction)}
                 </p>
               </div>
             </div>
 
-            <div style={{ padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: 9 }}>
               <a href={waLink} target="_blank" rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '14px 0', borderRadius: 10, background: WA_GREEN, color: '#fff', fontWeight: 700, fontSize: 15, textDecoration: 'none', transition: 'opacity 0.15s' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '13px 0', borderRadius: 10, background: WA_GREEN, color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none', transition: 'opacity 0.15s' }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.88'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}>
                 <IcoWA /> WhatsApp
               </a>
               {telLink && (
                 <a href={telLink}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '12px 0', borderRadius: 10, background: BLUE, color: '#fff', fontWeight: 700, fontSize: 15, textDecoration: 'none', transition: 'opacity 0.15s' }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '11px 0', borderRadius: 10, background: BLUE, color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none', transition: 'opacity 0.15s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.88'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}>
                   <IcoPhone /> Appeler
                 </a>
               )}
               <button onClick={() => setSaved(v => !v)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '11px 0', borderRadius: 10, border: `1.5px solid ${saved ? '#FCA5A5' : BORDER}`, background: saved ? '#FEF2F2' : '#fff', color: saved ? '#EF4444' : '#374151', fontWeight: 600, fontSize: 14, cursor: 'pointer', transition: 'all 0.2s' }}>
-                <IcoHeart filled={saved} />
-                {saved ? 'Annonce sauvegardée' : "Sauvegarder l'annonce"}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 0', borderRadius: 10, border: `1.5px solid ${saved ? '#FCA5A5' : BORDER}`, background: saved ? '#FEF2F2' : '#fff', color: saved ? '#EF4444' : '#374151', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s' }}>
+                <IcoHeart filled={saved} /> {saved ? 'Annonce sauvegardée' : "Sauvegarder l'annonce"}
               </button>
               <button onClick={share}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 0', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: '#fff', color: '#374151', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '9px 0', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: '#fff', color: '#374151', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = BG}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
                 <IcoShare /> Partager
               </button>
             </div>
-            <div style={{ padding: '0 24px 16px', textAlign: 'center' }}>
-              <p style={{ fontSize: 11, color: GRAY_LT, margin: 0 }}>Réf. annonce #{refCode}</p>
+            <div style={{ padding: '0 22px 14px', textAlign: 'center' }}>
+              <p style={{ fontSize: 11, color: GRAY_LT, margin: 0 }}>Réf. #{refCode}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ✅ Barre mobile — uniquement sur petit écran via CSS */}
+      {/* Barre mobile uniquement */}
       <div className="mobile-cta"
         style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: `1px solid ${BORDER}`, padding: '10px 16px', gap: 10, zIndex: 50 }}>
         {telLink && (
