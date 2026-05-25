@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 
-// ── Wilayas (fallback si Places ne trouve pas) ────────────────────────────────
 const WILAYAS = [
   'Adrar', 'Ain Defla', 'Ain Témouchent', 'Alger', 'Annaba',
   'Batna', 'Béchar', 'Béjaïa', 'Biskra', 'Blida',
@@ -41,7 +40,7 @@ const TYPE_LABELS: Record<string, string> = {
   local: 'Local commercial', terrain: 'Terrain', autre: 'Bien',
 }
 
-function formatPrice(raw: string): string {
+function formatPriceLabel(raw: string): string {
   const n = Number(raw.replace(/\s/g, ''))
   if (!n) return ''
   if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(n % 1_000_000_000 === 0 ? 0 : 1)} Milliards DA`
@@ -60,8 +59,7 @@ interface FormState {
   bedrooms: string
   bathrooms: string
   floor: string
-  // ✅ Champs géolocalisation
-  locationText: string   // texte affiché dans l'input
+  locationText: string
   wilaya: string
   commune: string
   quartier: string
@@ -82,29 +80,30 @@ const initialForm: FormState = {
 
 const BLUE = '#1B4FD8'
 
-// ── Composant autocomplete Google Places ─────────────────────────────────────
-function LocationAutocomplete({
-  value, onChange, onSelect, error
-}: {
-  value: string
-  onChange: (v: string) => void
+// ── Composant Google Places (nouvelle API) ────────────────────────────────────
+function LocationAutocomplete({ onSelect, error }: {
   onSelect: (data: { wilaya: string; commune: string; quartier: string; lat: number; lng: number; text: string }) => void
   error?: string
 }) {
-  const inputRef     = useRef<HTMLInputElement>(null)
-  const [ready, setReady] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [ready, setReady]         = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
+  const [displayText, setDisplayText] = useState('')
 
-  // Charge le script Google Places une seule fois
   useEffect(() => {
     const key = import.meta.env.VITE_GOOGLE_PLACES_API_KEY
-    if (!key) { console.warn('VITE_GOOGLE_PLACES_API_KEY manquante'); return }
-    if ((window as any).google?.maps?.places) { setReady(true); return }
+    if (!key) return
 
+    // Charge le script avec la nouvelle API (v=beta pour PlaceAutocompleteElement)
     const existing = document.querySelector('script[data-gplaces]')
-    if (existing) { existing.addEventListener('load', () => setReady(true)); return }
+    if (existing) {
+      if ((window as any).google?.maps?.places) { setReady(true); return }
+      existing.addEventListener('load', () => setReady(true))
+      return
+    }
 
     const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&language=fr`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&v=beta&language=fr`
     script.async = true
     script.defer = true
     script.setAttribute('data-gplaces', '1')
@@ -112,53 +111,91 @@ function LocationAutocomplete({
     document.head.appendChild(script)
   }, [])
 
-  // Init autocomplete après que le script soit chargé
   useEffect(() => {
-    if (!ready || !inputRef.current) return
+    if (!ready || !containerRef.current) return
     const g = (window as any).google
 
-    const autocomplete = new g.maps.places.Autocomplete(inputRef.current, {
-      types: ['geocode'],
-      componentRestrictions: { country: 'dz' },
-      fields: ['address_components', 'geometry', 'formatted_address'],
-    })
+    // Vide le container avant de créer l'élément
+    containerRef.current.innerHTML = ''
 
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace()
-      if (!place.geometry) return
-
-      const components = place.address_components || []
-      let wilaya  = ''
-      let commune = ''
-      let quartier = ''
-
-      for (const c of components) {
-        if (c.types.includes('administrative_area_level_1')) wilaya  = c.long_name
-        if (c.types.includes('locality'))                    commune = c.long_name
-        if (c.types.includes('sublocality') || c.types.includes('neighborhood')) quartier = c.long_name
-      }
-
-      // Nettoyage "Wilaya de X" → "X"
-      wilaya = wilaya.replace(/^wilaya\s+d[e']?\s*/i, '').trim()
-
-      // Matching avec nos wilayas
-      const match = WILAYAS.find(w => wilaya.toLowerCase().includes(w.toLowerCase()) || w.toLowerCase().includes(wilaya.toLowerCase()))
-      if (match) wilaya = match
-
-      const lat = place.geometry.location.lat()
-      const lng = place.geometry.location.lng()
-
-      onSelect({
-        wilaya,
-        commune,
-        quartier,
-        lat,
-        lng,
-        text: place.formatted_address || inputRef.current?.value || '',
+    try {
+      // Nouvelle API : PlaceAutocompleteElement
+      const autocomplete = new g.maps.places.PlaceAutocompleteElement({
+        componentRestrictions: { country: 'dz' },
+        types: ['geocode'],
       })
-    })
 
-    return () => g.maps.event.clearInstanceListeners(autocomplete)
+      // Style inline pour s'intégrer dans notre UI
+      autocomplete.style.width = '100%'
+      autocomplete.style.display = 'block'
+      containerRef.current.appendChild(autocomplete)
+
+      autocomplete.addEventListener('gmp-placeselect', async (event: any) => {
+        const place = event.place
+        await place.fetchFields({ fields: ['addressComponents', 'location', 'formattedAddress'] })
+
+        const components = place.addressComponents || []
+        let wilaya  = ''
+        let commune = ''
+        let quartier = ''
+
+        for (const c of components) {
+          if (c.types.includes('administrative_area_level_1')) wilaya  = c.longText || c.longName || ''
+          if (c.types.includes('locality'))                    commune = c.longText || c.longName || ''
+          if (c.types.includes('sublocality') || c.types.includes('neighborhood')) quartier = c.longText || c.longName || ''
+        }
+
+        // Nettoyage "Wilaya de X" → "X"
+        wilaya = wilaya.replace(/^wilaya\s+d[e']?\s*/i, '').trim()
+        const match = WILAYAS.find(w => wilaya.toLowerCase().includes(w.toLowerCase()) || w.toLowerCase().includes(wilaya.toLowerCase()))
+        if (match) wilaya = match
+
+        const lat = place.location?.lat() ?? 0
+        const lng = place.location?.lng() ?? 0
+        const text = place.formattedAddress || ''
+
+        setDisplayText(text)
+        setConfirmed(true)
+        onSelect({ wilaya, commune, quartier, lat, lng, text })
+      })
+    } catch (err) {
+      console.error('PlaceAutocompleteElement error:', err)
+      // Fallback vers l'ancienne API si disponible
+      try {
+        const input = document.createElement('input')
+        input.placeholder = 'Ex: Dely Brahim, Alger · Hydra · Oran centre...'
+        input.className = 'w-full border-2 rounded-lg px-3 py-2.5 text-sm outline-none'
+        input.style.borderColor = '#e5e7eb'
+        containerRef.current!.appendChild(input)
+
+        const autocomplete = new g.maps.places.Autocomplete(input, {
+          types: ['geocode'],
+          componentRestrictions: { country: 'dz' },
+          fields: ['address_components', 'geometry', 'formatted_address'],
+        })
+
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace()
+          if (!place.geometry) return
+          const components = place.address_components || []
+          let wilaya = '', commune = '', quartier = ''
+          for (const c of components) {
+            if (c.types.includes('administrative_area_level_1')) wilaya  = c.long_name
+            if (c.types.includes('locality'))                    commune = c.long_name
+            if (c.types.includes('sublocality') || c.types.includes('neighborhood')) quartier = c.long_name
+          }
+          wilaya = wilaya.replace(/^wilaya\s+d[e']?\s*/i, '').trim()
+          const match = WILAYAS.find(w => wilaya.toLowerCase().includes(w.toLowerCase()))
+          if (match) wilaya = match
+          const text = place.formatted_address || input.value
+          setDisplayText(text)
+          setConfirmed(true)
+          onSelect({ wilaya, commune, quartier, lat: place.geometry.location.lat(), lng: place.geometry.location.lng(), text })
+        })
+      } catch (e) {
+        console.error('Fallback Autocomplete error:', e)
+      }
+    }
   }, [ready])
 
   return (
@@ -166,26 +203,21 @@ function LocationAutocomplete({
       <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
         Localisation * <span className="text-gray-400 font-normal">(tapez une adresse, quartier ou ville)</span>
       </label>
-      <div style={{ position: 'relative' }}>
-        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-          <svg width={16} height={16} fill="none" stroke={value ? BLUE : '#9CA3AF'} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </span>
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder="Ex: Dely Brahim, Alger · Hydra · Oran centre..."
-          className="w-full border-2 rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none transition-all"
-          style={{ borderColor: error ? '#EF4444' : value ? BLUE : '#e5e7eb' }}
-        />
-      </div>
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+
+      {/* Container pour l'élément Google Places */}
+      <div ref={containerRef}
+        style={{ borderRadius: 8, overflow: 'hidden', border: `2px solid ${error ? '#EF4444' : confirmed ? BLUE : '#e5e7eb'}`, transition: 'border-color 0.2s' }}
+        className="w-full" />
+
       {!ready && (
         <p className="text-xs text-gray-400 mt-1">⏳ Chargement de l'autocomplete…</p>
+      )}
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+
+      {confirmed && displayText && (
+        <p className="text-xs mt-1 font-semibold" style={{ color: BLUE }}>
+          ✓ {displayText}
+        </p>
       )}
     </div>
   )
@@ -211,16 +243,6 @@ function LimiteAtteinte({ onBack }: { onBack: () => void }) {
           style={{ padding: '12px 0', background: '#fff', color: '#374151', border: '1.5px solid #E5E7EB', borderRadius: 12, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
           ← Retour
         </button>
-      </div>
-      <div style={{ marginTop: 32, background: 'linear-gradient(135deg, #1B4FD8, #7C3AED)', borderRadius: 16, padding: '20px 24px', color: '#fff', textAlign: 'left' }}>
-        <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', opacity: 0.8, marginBottom: 6 }}>BIENTÔT DISPONIBLE</p>
-        <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Darni Pro ✨</p>
-        <ul style={{ fontSize: 13, opacity: 0.9, lineHeight: 2, paddingLeft: 16, margin: 0 }}>
-          <li>Annonces illimitées</li>
-          <li>Badge "Vendeur vérifié"</li>
-          <li>Mise en vedette</li>
-          <li>Statistiques de vues</li>
-        </ul>
       </div>
     </div>
   )
@@ -263,7 +285,7 @@ export default function PostAnnonce() {
     }))
 
   const handlePhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files     = Array.from(e.target.files || [])
+    const files = Array.from(e.target.files || [])
     const remaining = 10 - photos.length
     if (files.length > remaining) { setError(`Maximum 10 photos.`); return }
     setError('')
@@ -280,9 +302,7 @@ export default function PostAnnonce() {
   const validateStep = () => {
     setError(''); setLocError('')
     if (step === 2 && !form.surface) { setError('La superficie est obligatoire.'); return false }
-    if (step === 3) {
-      if (!form.wilaya) { setLocError('Veuillez sélectionner une localisation via la barre de recherche.'); return false }
-    }
+    if (step === 3 && !form.wilaya)  { setLocError('Veuillez sélectionner une localisation via la barre de recherche.'); return false }
     if (step === 4) {
       if (!form.price)        { setError('Le prix est obligatoire.'); return false }
       if (!form.phone.trim()) { setError('Le numéro de téléphone est obligatoire.'); return false }
@@ -295,7 +315,6 @@ export default function PostAnnonce() {
   const handleSubmit = async () => {
     if (!validateStep() || !user) return
     setLoading(true); setError('')
-
     try {
       const location  = form.commune.trim() || form.wilaya
       const autoTitle = `${TYPE_LABELS[form.type] || form.type} ${form.surface}m² à ${location}`
@@ -359,7 +378,6 @@ export default function PostAnnonce() {
   }
 
   const steps = ['Type de bien', 'Caractéristiques', 'Localisation', 'Photos & Prix']
-
   const previewTitle = form.surface && form.wilaya
     ? `${TYPE_LABELS[form.type] || form.type} ${form.surface}m² à ${form.commune.trim() || form.wilaya}`
     : null
@@ -410,11 +428,10 @@ export default function PostAnnonce() {
         <div className="bg-white rounded-xl shadow-sm border p-6">
           {limitReached ? <LimiteAtteinte onBack={() => setLimitReached(false)} /> : (
             <>
-              {/* ─── ÉTAPE 1 — Type ─── */}
+              {/* ÉTAPE 1 */}
               {step === 1 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Type de bien</h2>
-
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">Transaction *</label>
                     <div className="flex gap-3">
@@ -427,7 +444,6 @@ export default function PostAnnonce() {
                       ))}
                     </div>
                   </div>
-
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">Catégorie *</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -447,7 +463,6 @@ export default function PostAnnonce() {
                       ))}
                     </div>
                   </div>
-
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">
                       Documents <span className="text-gray-400 font-normal">(plusieurs choix possibles)</span>
@@ -468,15 +483,13 @@ export default function PostAnnonce() {
                       })}
                     </div>
                   </div>
-
                   <div className="p-3 rounded-lg text-xs" style={{ background: '#EEF2FF', color: '#374151' }}>
                     ℹ️ Le titre sera généré automatiquement à partir du type, de la superficie et de la localisation.
-                    {previewTitle && <p className="mt-1 font-semibold" style={{ color: BLUE }}>Aperçu : {previewTitle}</p>}
                   </div>
                 </div>
               )}
 
-              {/* ─── ÉTAPE 2 — Caractéristiques ─── */}
+              {/* ÉTAPE 2 */}
               {step === 2 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Caractéristiques</h2>
@@ -498,7 +511,6 @@ export default function PostAnnonce() {
                       </div>
                     ))}
                   </div>
-
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">Équipements</label>
                     <div className="flex flex-wrap gap-2">
@@ -517,15 +529,12 @@ export default function PostAnnonce() {
                 </div>
               )}
 
-              {/* ─── ÉTAPE 3 — ✅ Localisation Google Places ─── */}
+              {/* ÉTAPE 3 — Google Places nouvelle API */}
               {step === 3 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Localisation</h2>
 
-                  {/* ✅ Barre de recherche Google Places */}
                   <LocationAutocomplete
-                    value={form.locationText}
-                    onChange={v => set('locationText', v)}
                     onSelect={({ wilaya, commune, quartier, lat, lng, text }) => {
                       setLocError('')
                       setForm(prev => ({ ...prev, wilaya, commune, quartier, lat, lng, locationText: text }))
@@ -533,30 +542,28 @@ export default function PostAnnonce() {
                     error={locError}
                   />
 
-                  {/* Résumé si localisation sélectionnée */}
                   {form.wilaya && (
                     <div className="p-3 rounded-lg" style={{ background: '#F0FDF4', border: '1px solid #86EFAC' }}>
-                      <p className="text-xs text-green-600 font-semibold mb-1">✓ Localisation confirmée</p>
+                      <p className="text-xs text-green-600 font-semibold mb-2">✓ Localisation confirmée</p>
                       <div className="grid grid-cols-3 gap-2 text-xs text-gray-700">
-                        <div><span className="text-gray-400 block">Wilaya</span><strong>{form.wilaya}</strong></div>
-                        {form.commune  && <div><span className="text-gray-400 block">Commune</span><strong>{form.commune}</strong></div>}
-                        {form.quartier && <div><span className="text-gray-400 block">Quartier</span><strong>{form.quartier}</strong></div>}
+                        <div><span className="text-gray-400 block mb-0.5">Wilaya</span><strong>{form.wilaya}</strong></div>
+                        {form.commune  && <div><span className="text-gray-400 block mb-0.5">Commune</span><strong>{form.commune}</strong></div>}
+                        {form.quartier && <div><span className="text-gray-400 block mb-0.5">Quartier</span><strong>{form.quartier}</strong></div>}
                       </div>
-                      {form.lat && <p className="text-xs text-gray-400 mt-1">📍 {form.lat.toFixed(4)}, {form.lng?.toFixed(4)}</p>}
+                      {form.lat && <p className="text-xs text-gray-400 mt-2">📍 {form.lat.toFixed(5)}, {form.lng?.toFixed(5)}</p>}
                     </div>
                   )}
 
-                  {/* Aperçu titre */}
                   {previewTitle && (
                     <div className="p-3 rounded-lg" style={{ background: '#EEF2FF' }}>
-                      <p className="text-xs text-gray-500 mb-1">Titre généré automatiquement :</p>
+                      <p className="text-xs text-gray-500 mb-1">Titre généré :</p>
                       <p className="text-sm font-bold" style={{ color: BLUE }}>{previewTitle}</p>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* ─── ÉTAPE 4 — Photos & Prix ─── */}
+              {/* ÉTAPE 4 */}
               {step === 4 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Photos & Prix</h2>
@@ -568,7 +575,6 @@ export default function PostAnnonce() {
                     </div>
                   )}
 
-                  {/* Photos */}
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">
                       Photos <span className="text-gray-400 font-normal">({photos.length}/10)</span>
@@ -594,16 +600,13 @@ export default function PostAnnonce() {
                             <img src={src} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
                             {i === 0 && <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded font-semibold">Principale</div>}
                             <button onClick={() => removePhoto(i)}
-                              className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                              ×
-                            </button>
+                              className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
 
-                  {/* Prix */}
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
                       Prix * <span className="text-gray-400 font-normal">(en DZD)</span>
@@ -618,13 +621,10 @@ export default function PostAnnonce() {
                       </span>
                     </div>
                     {form.price && (
-                      <p className="text-xs mt-1 font-semibold" style={{ color: BLUE }}>
-                        ≈ {formatPrice(form.price)}
-                      </p>
+                      <p className="text-xs mt-1 font-semibold" style={{ color: BLUE }}>≈ {formatPriceLabel(form.price)}</p>
                     )}
                   </div>
 
-                  {/* Téléphone */}
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
                       Téléphone * <span className="text-gray-400 font-normal">(affiché aux acheteurs)</span>
@@ -638,7 +638,6 @@ export default function PostAnnonce() {
                     </div>
                   </div>
 
-                  {/* WhatsApp */}
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
                       WhatsApp <span className="text-gray-400 font-normal">(optionnel)</span>
@@ -652,7 +651,6 @@ export default function PostAnnonce() {
                     </div>
                   </div>
 
-                  {/* Description */}
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">Description</label>
                     <textarea value={form.description} onChange={e => set('description', e.target.value)}
@@ -666,22 +664,20 @@ export default function PostAnnonce() {
               )}
 
               {error && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                  {error}
-                </div>
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>
               )}
 
               <div className="flex gap-3 mt-6">
                 {step > 1 && (
                   <button onClick={() => setStep(s => s - 1)} disabled={loading}
-                    className="flex-1 py-3 rounded-xl border-2 text-sm font-bold transition-all"
+                    className="flex-1 py-3 rounded-xl border-2 text-sm font-bold"
                     style={{ borderColor: '#e5e7eb', color: '#6b7280' }}>
                     ← Retour
                   </button>
                 )}
                 {step < 4 ? (
                   <button onClick={nextStep}
-                    className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+                    className="flex-1 py-3 rounded-xl text-sm font-bold text-white"
                     style={{ background: BLUE }}>
                     Suivant →
                   </button>
