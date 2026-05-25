@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 
+// ── Wilayas (fallback si Places ne trouve pas) ────────────────────────────────
 const WILAYAS = [
   'Adrar', 'Ain Defla', 'Ain Témouchent', 'Alger', 'Annaba',
   'Batna', 'Béchar', 'Béjaïa', 'Biskra', 'Blida',
@@ -40,11 +41,10 @@ const TYPE_LABELS: Record<string, string> = {
   local: 'Local commercial', terrain: 'Terrain', autre: 'Bien',
 }
 
-// ✅ Formatage prix intelligent
 function formatPrice(raw: string): string {
   const n = Number(raw.replace(/\s/g, ''))
   if (!n) return ''
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(n % 1_000_000_000 === 0 ? 0 : 1)} Mds DA`
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(n % 1_000_000_000 === 0 ? 0 : 1)} Milliards DA`
   if (n >= 1_000_000)     return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)} M DA`
   return `${n.toLocaleString('fr-DZ')} DA`
 }
@@ -53,16 +53,20 @@ interface FormState {
   description: string
   type: string
   transaction: string
-  document_types: string[]  // ✅ multi-select
+  document_types: string[]
   price: string
   surface: string
   rooms: string
   bedrooms: string
   bathrooms: string
   floor: string
+  // ✅ Champs géolocalisation
+  locationText: string   // texte affiché dans l'input
   wilaya: string
   commune: string
   quartier: string
+  lat: number | null
+  lng: number | null
   amenities: string[]
   phone: string
   whatsapp: string
@@ -71,22 +75,131 @@ interface FormState {
 const initialForm: FormState = {
   description: '', type: 'appartement', transaction: 'vente',
   document_types: [], price: '', surface: '', rooms: '', bedrooms: '',
-  bathrooms: '', floor: '', wilaya: '', commune: '', quartier: '', amenities: [],
-  phone: '', whatsapp: '',
+  bathrooms: '', floor: '',
+  locationText: '', wilaya: '', commune: '', quartier: '', lat: null, lng: null,
+  amenities: [], phone: '', whatsapp: '',
 }
 
 const BLUE = '#1B4FD8'
 
+// ── Composant autocomplete Google Places ─────────────────────────────────────
+function LocationAutocomplete({
+  value, onChange, onSelect, error
+}: {
+  value: string
+  onChange: (v: string) => void
+  onSelect: (data: { wilaya: string; commune: string; quartier: string; lat: number; lng: number; text: string }) => void
+  error?: string
+}) {
+  const inputRef     = useRef<HTMLInputElement>(null)
+  const [ready, setReady] = useState(false)
+
+  // Charge le script Google Places une seule fois
+  useEffect(() => {
+    const key = import.meta.env.VITE_GOOGLE_PLACES_API_KEY
+    if (!key) { console.warn('VITE_GOOGLE_PLACES_API_KEY manquante'); return }
+    if ((window as any).google?.maps?.places) { setReady(true); return }
+
+    const existing = document.querySelector('script[data-gplaces]')
+    if (existing) { existing.addEventListener('load', () => setReady(true)); return }
+
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&language=fr`
+    script.async = true
+    script.defer = true
+    script.setAttribute('data-gplaces', '1')
+    script.onload = () => setReady(true)
+    document.head.appendChild(script)
+  }, [])
+
+  // Init autocomplete après que le script soit chargé
+  useEffect(() => {
+    if (!ready || !inputRef.current) return
+    const g = (window as any).google
+
+    const autocomplete = new g.maps.places.Autocomplete(inputRef.current, {
+      types: ['geocode'],
+      componentRestrictions: { country: 'dz' },
+      fields: ['address_components', 'geometry', 'formatted_address'],
+    })
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace()
+      if (!place.geometry) return
+
+      const components = place.address_components || []
+      let wilaya  = ''
+      let commune = ''
+      let quartier = ''
+
+      for (const c of components) {
+        if (c.types.includes('administrative_area_level_1')) wilaya  = c.long_name
+        if (c.types.includes('locality'))                    commune = c.long_name
+        if (c.types.includes('sublocality') || c.types.includes('neighborhood')) quartier = c.long_name
+      }
+
+      // Nettoyage "Wilaya de X" → "X"
+      wilaya = wilaya.replace(/^wilaya\s+d[e']?\s*/i, '').trim()
+
+      // Matching avec nos wilayas
+      const match = WILAYAS.find(w => wilaya.toLowerCase().includes(w.toLowerCase()) || w.toLowerCase().includes(wilaya.toLowerCase()))
+      if (match) wilaya = match
+
+      const lat = place.geometry.location.lat()
+      const lng = place.geometry.location.lng()
+
+      onSelect({
+        wilaya,
+        commune,
+        quartier,
+        lat,
+        lng,
+        text: place.formatted_address || inputRef.current?.value || '',
+      })
+    })
+
+    return () => g.maps.event.clearInstanceListeners(autocomplete)
+  }, [ready])
+
+  return (
+    <div>
+      <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
+        Localisation * <span className="text-gray-400 font-normal">(tapez une adresse, quartier ou ville)</span>
+      </label>
+      <div style={{ position: 'relative' }}>
+        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+          <svg width={16} height={16} fill="none" stroke={value ? BLUE : '#9CA3AF'} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </span>
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="Ex: Dely Brahim, Alger · Hydra · Oran centre..."
+          className="w-full border-2 rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none transition-all"
+          style={{ borderColor: error ? '#EF4444' : value ? BLUE : '#e5e7eb' }}
+        />
+      </div>
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {!ready && (
+        <p className="text-xs text-gray-400 mt-1">⏳ Chargement de l'autocomplete…</p>
+      )}
+    </div>
+  )
+}
+
+// ── LimiteAtteinte ────────────────────────────────────────────────────────────
 function LimiteAtteinte({ onBack }: { onBack: () => void }) {
   const navigate = useNavigate()
   return (
     <div style={{ textAlign: 'center', padding: '40px 24px' }}>
       <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 32 }}>🔒</div>
       <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: 10 }}>Limite gratuite atteinte</h2>
-      <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.7, marginBottom: 6 }}>
-        Vous avez atteint la limite de <strong>3 annonces gratuites</strong>.
-      </p>
       <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.7, marginBottom: 28 }}>
+        Vous avez atteint la limite de <strong>3 annonces gratuites</strong>.<br />
         Passez en <strong style={{ color: BLUE }}>Darni Pro</strong> pour publier en illimité.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 320, margin: '0 auto' }}>
@@ -105,7 +218,7 @@ function LimiteAtteinte({ onBack }: { onBack: () => void }) {
         <ul style={{ fontSize: 13, opacity: 0.9, lineHeight: 2, paddingLeft: 16, margin: 0 }}>
           <li>Annonces illimitées</li>
           <li>Badge "Vendeur vérifié"</li>
-          <li>Mise en vedette de vos biens</li>
+          <li>Mise en vedette</li>
           <li>Statistiques de vues</li>
         </ul>
       </div>
@@ -113,6 +226,7 @@ function LimiteAtteinte({ onBack }: { onBack: () => void }) {
   )
 }
 
+// ── Page principale ───────────────────────────────────────────────────────────
 export default function PostAnnonce() {
   const { user, loading: authLoading } = useAuth()
   const navigate     = useNavigate()
@@ -125,13 +239,13 @@ export default function PostAnnonce() {
   const [previews, setPreviews] = useState<string[]>([])
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
+  const [locError, setLocError] = useState('')
   const [step, setStep]         = useState(1)
   const [limitReached, setLimitReached] = useState(false)
 
-  const set = (field: keyof FormState, value: string) =>
+  const set = (field: keyof FormState, value: any) =>
     setForm(prev => ({ ...prev, [field]: value }))
 
-  // ✅ Toggle document type (multi-select)
   const toggleDocType = (key: string) =>
     setForm(prev => ({
       ...prev,
@@ -151,7 +265,7 @@ export default function PostAnnonce() {
   const handlePhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files     = Array.from(e.target.files || [])
     const remaining = 10 - photos.length
-    if (files.length > remaining) { setError(`Maximum 10 photos. Tu peux encore en ajouter ${remaining}.`); return }
+    if (files.length > remaining) { setError(`Maximum 10 photos.`); return }
     setError('')
     setPhotos(prev => [...prev, ...files.slice(0, remaining)])
     setPreviews(prev => [...prev, ...files.slice(0, remaining).map(f => URL.createObjectURL(f))])
@@ -164,9 +278,11 @@ export default function PostAnnonce() {
   }
 
   const validateStep = () => {
-    setError('')
-    if (step === 2 && !form.surface)      { setError('La superficie est obligatoire.'); return false }
-    if (step === 3 && !form.wilaya)       { setError('La wilaya est obligatoire.'); return false }
+    setError(''); setLocError('')
+    if (step === 2 && !form.surface) { setError('La superficie est obligatoire.'); return false }
+    if (step === 3) {
+      if (!form.wilaya) { setLocError('Veuillez sélectionner une localisation via la barre de recherche.'); return false }
+    }
     if (step === 4) {
       if (!form.price)        { setError('Le prix est obligatoire.'); return false }
       if (!form.phone.trim()) { setError('Le numéro de téléphone est obligatoire.'); return false }
@@ -202,8 +318,8 @@ export default function PostAnnonce() {
         description:    form.description.trim(),
         type:           form.type,
         transaction:    form.transaction,
-        document_type:  form.document_types[0] || null,   // compat colonne existante
-        document_types: form.document_types,               // ✅ nouvelle colonne multi
+        document_type:  form.document_types[0] || null,
+        document_types: form.document_types,
         price:          Number(form.price.replace(/\s/g, '')),
         surface:        parseFloat(form.surface),
         rooms:          form.rooms     ? parseInt(form.rooms)     : null,
@@ -213,6 +329,8 @@ export default function PostAnnonce() {
         wilaya:         form.wilaya,
         commune:        form.commune.trim()  || null,
         quartier:       form.quartier.trim() || null,
+        lat:            form.lat,
+        lng:            form.lng,
         amenities:      form.amenities,
         photos:         photoUrls,
         phone:          form.phone.trim(),
@@ -292,7 +410,7 @@ export default function PostAnnonce() {
         <div className="bg-white rounded-xl shadow-sm border p-6">
           {limitReached ? <LimiteAtteinte onBack={() => setLimitReached(false)} /> : (
             <>
-              {/* ─── ÉTAPE 1 ─── */}
+              {/* ─── ÉTAPE 1 — Type ─── */}
               {step === 1 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Type de bien</h2>
@@ -330,10 +448,9 @@ export default function PostAnnonce() {
                     </div>
                   </div>
 
-                  {/* ✅ Document multi-select */}
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">
-                      Type de document <span className="text-gray-400 font-normal">(plusieurs choix possibles)</span>
+                      Documents <span className="text-gray-400 font-normal">(plusieurs choix possibles)</span>
                     </label>
                     <div className="flex flex-col gap-2">
                       {DOCUMENT_TYPES.map(({ key, label }) => {
@@ -342,37 +459,24 @@ export default function PostAnnonce() {
                           <button key={key} onClick={() => toggleDocType(key)}
                             className="flex items-center gap-3 py-3 px-4 rounded-lg border-2 text-sm font-semibold transition-all text-left"
                             style={{ borderColor: selected ? BLUE : '#e5e7eb', background: selected ? '#eff4ff' : 'white', color: selected ? BLUE : '#6b7280' }}>
-                            {/* Checkbox visuel */}
-                            <span style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${selected ? BLUE : '#d1d5db'}`, background: selected ? BLUE : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
-                              {selected && (
-                                <svg width={11} height={11} fill="none" stroke="#fff" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
+                            <span style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${selected ? BLUE : '#d1d5db'}`, background: selected ? BLUE : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              {selected && <svg width={11} height={11} fill="none" stroke="#fff" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                             </span>
                             {label}
                           </button>
                         )
                       })}
                     </div>
-                    {form.document_types.length > 0 && (
-                      <p className="text-xs mt-2" style={{ color: BLUE }}>
-                        ✓ {form.document_types.length} document{form.document_types.length > 1 ? 's' : ''} sélectionné{form.document_types.length > 1 ? 's' : ''}
-                      </p>
-                    )}
                   </div>
 
-                  {/* Info titre auto */}
                   <div className="p-3 rounded-lg text-xs" style={{ background: '#EEF2FF', color: '#374151' }}>
-                    ℹ️ Le titre sera généré automatiquement : <em>Type + superficie + localisation</em>
-                    {previewTitle && (
-                      <p className="mt-1 font-semibold" style={{ color: BLUE }}>Aperçu : {previewTitle}</p>
-                    )}
+                    ℹ️ Le titre sera généré automatiquement à partir du type, de la superficie et de la localisation.
+                    {previewTitle && <p className="mt-1 font-semibold" style={{ color: BLUE }}>Aperçu : {previewTitle}</p>}
                   </div>
                 </div>
               )}
 
-              {/* ─── ÉTAPE 2 ─── */}
+              {/* ─── ÉTAPE 2 — Caractéristiques ─── */}
               {step === 2 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Caractéristiques</h2>
@@ -394,6 +498,7 @@ export default function PostAnnonce() {
                       </div>
                     ))}
                   </div>
+
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">Équipements</label>
                     <div className="flex flex-wrap gap-2">
@@ -412,36 +517,36 @@ export default function PostAnnonce() {
                 </div>
               )}
 
-              {/* ─── ÉTAPE 3 ─── */}
+              {/* ─── ÉTAPE 3 — ✅ Localisation Google Places ─── */}
               {step === 3 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Localisation</h2>
-                  <div>
-                    <label className="text-sm font-semibold text-gray-600 mb-1.5 block">Wilaya *</label>
-                    <select value={form.wilaya} onChange={e => set('wilaya', e.target.value)}
-                      className="w-full border-2 rounded-lg px-3 py-2.5 text-sm outline-none bg-white"
-                      style={{ borderColor: form.wilaya ? BLUE : '#e5e7eb' }}>
-                      <option value="">-- Sélectionner une wilaya --</option>
-                      {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold text-gray-600 mb-1.5 block">Commune / Ville</label>
-                    <input type="text" value={form.commune} onChange={e => set('commune', e.target.value)}
-                      placeholder="Ex: Bab El Oued, Dely Brahim, Hydra..."
-                      className="w-full border-2 rounded-lg px-3 py-2.5 text-sm outline-none"
-                      style={{ borderColor: form.commune ? BLUE : '#e5e7eb' }} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
-                      Quartier <span className="text-gray-400 font-normal">(optionnel)</span>
-                    </label>
-                    <input type="text" value={form.quartier} onChange={e => set('quartier', e.target.value)}
-                      placeholder="Ex: Les Pins Maritimes, Cité Djamel..."
-                      className="w-full border-2 rounded-lg px-3 py-2.5 text-sm outline-none"
-                      style={{ borderColor: form.quartier ? BLUE : '#e5e7eb' }} />
-                  </div>
 
+                  {/* ✅ Barre de recherche Google Places */}
+                  <LocationAutocomplete
+                    value={form.locationText}
+                    onChange={v => set('locationText', v)}
+                    onSelect={({ wilaya, commune, quartier, lat, lng, text }) => {
+                      setLocError('')
+                      setForm(prev => ({ ...prev, wilaya, commune, quartier, lat, lng, locationText: text }))
+                    }}
+                    error={locError}
+                  />
+
+                  {/* Résumé si localisation sélectionnée */}
+                  {form.wilaya && (
+                    <div className="p-3 rounded-lg" style={{ background: '#F0FDF4', border: '1px solid #86EFAC' }}>
+                      <p className="text-xs text-green-600 font-semibold mb-1">✓ Localisation confirmée</p>
+                      <div className="grid grid-cols-3 gap-2 text-xs text-gray-700">
+                        <div><span className="text-gray-400 block">Wilaya</span><strong>{form.wilaya}</strong></div>
+                        {form.commune  && <div><span className="text-gray-400 block">Commune</span><strong>{form.commune}</strong></div>}
+                        {form.quartier && <div><span className="text-gray-400 block">Quartier</span><strong>{form.quartier}</strong></div>}
+                      </div>
+                      {form.lat && <p className="text-xs text-gray-400 mt-1">📍 {form.lat.toFixed(4)}, {form.lng?.toFixed(4)}</p>}
+                    </div>
+                  )}
+
+                  {/* Aperçu titre */}
                   {previewTitle && (
                     <div className="p-3 rounded-lg" style={{ background: '#EEF2FF' }}>
                       <p className="text-xs text-gray-500 mb-1">Titre généré automatiquement :</p>
@@ -451,7 +556,7 @@ export default function PostAnnonce() {
                 </div>
               )}
 
-              {/* ─── ÉTAPE 4 ─── */}
+              {/* ─── ÉTAPE 4 — Photos & Prix ─── */}
               {step === 4 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Photos & Prix</h2>
@@ -512,7 +617,6 @@ export default function PostAnnonce() {
                         {form.transaction === 'location' ? 'DA/mois' : 'DA'}
                       </span>
                     </div>
-                    {/* ✅ Formatage prix intelligent */}
                     {form.price && (
                       <p className="text-xs mt-1 font-semibold" style={{ color: BLUE }}>
                         ≈ {formatPrice(form.price)}
@@ -542,7 +646,7 @@ export default function PostAnnonce() {
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">💬</span>
                       <input type="tel" value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)}
-                        placeholder="0555 00 00 00 (si différent du tél)"
+                        placeholder="0555 00 00 00"
                         className="w-full border-2 rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none"
                         style={{ borderColor: form.whatsapp ? '#25D366' : '#e5e7eb' }} />
                     </div>
@@ -556,7 +660,7 @@ export default function PostAnnonce() {
                       rows={5} maxLength={2000}
                       className="w-full border-2 rounded-lg px-3 py-2.5 text-sm outline-none resize-none"
                       style={{ borderColor: form.description ? BLUE : '#e5e7eb' }} />
-                    <p className="text-xs text-gray-400 mt-1">{form.description.length}/2000 caractères</p>
+                    <p className="text-xs text-gray-400 mt-1">{form.description.length}/2000</p>
                   </div>
                 </div>
               )}
@@ -583,7 +687,7 @@ export default function PostAnnonce() {
                   </button>
                 ) : (
                   <button onClick={handleSubmit} disabled={loading}
-                    className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 flex items-center justify-center gap-2"
+                    className="flex-1 py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2"
                     style={{ background: loading ? '#93a3d1' : BLUE }}>
                     {loading ? (
                       <>
