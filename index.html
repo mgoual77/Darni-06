@@ -1,21 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Real Estate Mobile App</title>
-      <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
-      <link rel="manifest" href="/manifest.json">
-      <meta name="theme-color" content="#1B4FD8">
-      <meta name="apple-mobile-web-app-capable" content="yes">
-      <meta name="apple-mobile-web-app-status-bar-style" content="default">
-      <meta name="apple-mobile-web-app-title" content="Darni">
-    </head>
+    <!-- ── SEO ── -->
+    <title>Darni — Immobilier en Algérie | Achat, Vente, Location</title>
+    <meta name="description" content="Darni est la plateforme immobilière de référence en Algérie. Trouvez votre appartement, villa, terrain ou local commercial. Annonces vérifiées, contact direct vendeur." />
+    <meta name="keywords" content="immobilier algérie, appartement alger, villa vente algérie, location appartement, annonces immobilières dz" />
+    <meta name="author" content="Darni" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://darni.app/" />
 
-    <body>
-      <div id="root"></div>
-      <script type="module" src="/src/main.tsx"></script>
-    </body>
-  </html>
-  
+    <!-- ── Open Graph (partage réseaux sociaux) ── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Darni — Immobilier en Algérie" />
+    <meta property="og:description" content="Trouvez votre bien immobilier en Algérie. Appartements, villas, terrains, locaux. Contact direct avec les vendeurs." />
+    <meta property="og:url" content="https://darni.app/" />
+    <meta property="og:image" content="https://darni.app/icons/icon-512.png" />
+    <meta property="og:locale" content="fr_DZ" />
+    <meta property="og:site_name" content="Darni" />
+
+    <!-- ── Twitter Card ── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Darni — Immobilier en Algérie" />
+    <meta name="twitter:description" content="Trouvez votre bien immobilier en Algérie. Appartements, villas, terrains, locaux." />
+    <meta name="twitter:image" content="https://darni.app/icons/icon-512.png" />
+
+    <!-- ── PWA ── -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1B4FD8" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Darni" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+    <!-- ── Favicon ── -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+
+    <!-- ── Fonts ── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet" />
+
+    <style>
+      html, body { height: 100%; margin: 0; }
+      #root { height: 100%; }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
