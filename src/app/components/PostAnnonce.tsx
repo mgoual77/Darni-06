@@ -48,176 +48,174 @@ function formatPriceLabel(raw: string): string {
   return `${n.toLocaleString('fr-DZ')} DA`
 }
 
+interface LocationData {
+  wilaya: string; commune: string; quartier: string
+  lat: number; lng: number; text: string
+}
+
 interface FormState {
-  description: string
-  type: string
-  transaction: string
-  document_types: string[]
-  price: string
-  surface: string
-  rooms: string
-  bedrooms: string
-  bathrooms: string
-  floor: string
-  locationText: string
-  wilaya: string
-  commune: string
-  quartier: string
-  lat: number | null
-  lng: number | null
-  amenities: string[]
-  phone: string
-  whatsapp: string
+  description: string; type: string; transaction: string; document_types: string[]
+  price: string; surface: string; rooms: string; bedrooms: string; bathrooms: string; floor: string
+  wilaya: string; commune: string; quartier: string; lat: number | null; lng: number | null
+  amenities: string[]; phone: string; whatsapp: string
 }
 
 const initialForm: FormState = {
-  description: '', type: 'appartement', transaction: 'vente',
-  document_types: [], price: '', surface: '', rooms: '', bedrooms: '',
-  bathrooms: '', floor: '',
-  locationText: '', wilaya: '', commune: '', quartier: '', lat: null, lng: null,
+  description: '', type: 'appartement', transaction: 'vente', document_types: [],
+  price: '', surface: '', rooms: '', bedrooms: '', bathrooms: '', floor: '',
+  wilaya: '', commune: '', quartier: '', lat: null, lng: null,
   amenities: [], phone: '', whatsapp: '',
 }
 
 const BLUE = '#1B4FD8'
 
-// ── Composant Google Places (nouvelle API) ────────────────────────────────────
+// ── Google Places Autocomplete ────────────────────────────────────────────────
 function LocationAutocomplete({ onSelect, error }: {
-  onSelect: (data: { wilaya: string; commune: string; quartier: string; lat: number; lng: number; text: string }) => void
+  onSelect: (data: LocationData) => void
   error?: string
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [ready, setReady]         = useState(false)
-  const [confirmed, setConfirmed] = useState(false)
-  const [displayText, setDisplayText] = useState('')
+  const [confirmed, setConfirmed] = useState<LocationData | null>(null)
+  const [scriptLoaded, setScriptLoaded] = useState(false)
 
+  // Charge le script Google Maps
   useEffect(() => {
     const key = import.meta.env.VITE_GOOGLE_PLACES_API_KEY
-    if (!key) return
+    if (!key) { console.error('VITE_GOOGLE_PLACES_API_KEY manquante'); return }
 
-    // Charge le script avec la nouvelle API (v=beta pour PlaceAutocompleteElement)
+    // Script déjà chargé
+    if ((window as any).google?.maps?.places) { setScriptLoaded(true); return }
+
     const existing = document.querySelector('script[data-gplaces]')
     if (existing) {
-      if ((window as any).google?.maps?.places) { setReady(true); return }
-      existing.addEventListener('load', () => setReady(true))
+      existing.addEventListener('load', () => setScriptLoaded(true))
       return
     }
 
     const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&v=beta&language=fr`
+    // v=beta requis pour PlaceAutocompleteElement
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&v=beta&language=fr&loading=async`
     script.async = true
     script.defer = true
     script.setAttribute('data-gplaces', '1')
-    script.onload = () => setReady(true)
+    script.onload = () => setScriptLoaded(true)
+    script.onerror = () => console.error('Échec chargement Google Maps script')
     document.head.appendChild(script)
   }, [])
 
+  // Monte le PlaceAutocompleteElement une fois le script chargé
   useEffect(() => {
-    if (!ready || !containerRef.current) return
-    const g = (window as any).google
+    if (!scriptLoaded || !containerRef.current) return
 
-    // Vide le container avant de créer l'élément
+    const g = (window as any).google
+    if (!g?.maps?.places?.PlaceAutocompleteElement) {
+      console.error('PlaceAutocompleteElement non disponible')
+      return
+    }
+
+    // Vide le container
     containerRef.current.innerHTML = ''
 
-    try {
-      // Nouvelle API : PlaceAutocompleteElement
-      const autocomplete = new g.maps.places.PlaceAutocompleteElement({
-        componentRestrictions: { country: 'dz' },
-        types: ['geocode'],
-      })
+    // Crée l'élément natif Google
+    const el = new g.maps.places.PlaceAutocompleteElement({
+      componentRestrictions: { country: 'dz' },
+      types: ['geocode'],
+    })
 
-      // Style inline pour s'intégrer dans notre UI
-      autocomplete.style.width = '100%'
-      autocomplete.style.display = 'block'
-      containerRef.current.appendChild(autocomplete)
+    // Injecte dans le DOM — ✅ PAS de overflow:hidden ici
+    containerRef.current.appendChild(el)
 
-      autocomplete.addEventListener('gmp-placeselect', async (event: any) => {
+    // Écoute la sélection
+    el.addEventListener('gmp-placeselect', async (event: any) => {
+      try {
         const place = event.place
-        await place.fetchFields({ fields: ['addressComponents', 'location', 'formattedAddress'] })
+        await place.fetchFields({
+          fields: ['addressComponents', 'location', 'formattedAddress'],
+        })
 
-        const components = place.addressComponents || []
-        let wilaya  = ''
-        let commune = ''
-        let quartier = ''
+        const components: any[] = place.addressComponents || []
+        let wilaya = '', commune = '', quartier = ''
 
         for (const c of components) {
-          if (c.types.includes('administrative_area_level_1')) wilaya  = c.longText || c.longName || ''
-          if (c.types.includes('locality'))                    commune = c.longText || c.longName || ''
-          if (c.types.includes('sublocality') || c.types.includes('neighborhood')) quartier = c.longText || c.longName || ''
+          const types = c.types || []
+          if (types.includes('administrative_area_level_1')) wilaya  = c.longText || c.longName || ''
+          if (types.includes('locality'))                    commune = c.longText || c.longName || ''
+          if (types.includes('sublocality_level_1') || types.includes('sublocality') || types.includes('neighborhood'))
+            quartier = c.longText || c.longName || ''
         }
 
         // Nettoyage "Wilaya de X" → "X"
         wilaya = wilaya.replace(/^wilaya\s+d[e']?\s*/i, '').trim()
-        const match = WILAYAS.find(w => wilaya.toLowerCase().includes(w.toLowerCase()) || w.toLowerCase().includes(wilaya.toLowerCase()))
+        const match = WILAYAS.find(w =>
+          wilaya.toLowerCase().includes(w.toLowerCase()) ||
+          w.toLowerCase().includes(wilaya.toLowerCase())
+        )
         if (match) wilaya = match
 
-        const lat = place.location?.lat() ?? 0
-        const lng = place.location?.lng() ?? 0
+        const lat  = place.location?.lat() ?? 0
+        const lng  = place.location?.lng() ?? 0
         const text = place.formattedAddress || ''
 
-        setDisplayText(text)
-        setConfirmed(true)
-        onSelect({ wilaya, commune, quartier, lat, lng, text })
-      })
-    } catch (err) {
-      console.error('PlaceAutocompleteElement error:', err)
-      // Fallback vers l'ancienne API si disponible
-      try {
-        const input = document.createElement('input')
-        input.placeholder = 'Ex: Dely Brahim, Alger · Hydra · Oran centre...'
-        input.className = 'w-full border-2 rounded-lg px-3 py-2.5 text-sm outline-none'
-        input.style.borderColor = '#e5e7eb'
-        containerRef.current!.appendChild(input)
-
-        const autocomplete = new g.maps.places.Autocomplete(input, {
-          types: ['geocode'],
-          componentRestrictions: { country: 'dz' },
-          fields: ['address_components', 'geometry', 'formatted_address'],
-        })
-
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace()
-          if (!place.geometry) return
-          const components = place.address_components || []
-          let wilaya = '', commune = '', quartier = ''
-          for (const c of components) {
-            if (c.types.includes('administrative_area_level_1')) wilaya  = c.long_name
-            if (c.types.includes('locality'))                    commune = c.long_name
-            if (c.types.includes('sublocality') || c.types.includes('neighborhood')) quartier = c.long_name
-          }
-          wilaya = wilaya.replace(/^wilaya\s+d[e']?\s*/i, '').trim()
-          const match = WILAYAS.find(w => wilaya.toLowerCase().includes(w.toLowerCase()))
-          if (match) wilaya = match
-          const text = place.formatted_address || input.value
-          setDisplayText(text)
-          setConfirmed(true)
-          onSelect({ wilaya, commune, quartier, lat: place.geometry.location.lat(), lng: place.geometry.location.lng(), text })
-        })
-      } catch (e) {
-        console.error('Fallback Autocomplete error:', e)
+        const data: LocationData = { wilaya, commune, quartier, lat, lng, text }
+        setConfirmed(data)
+        onSelect(data)
+      } catch (err) {
+        console.error('Erreur extraction place:', err)
       }
+    })
+
+    return () => {
+      // Cleanup
+      if (containerRef.current) containerRef.current.innerHTML = ''
     }
-  }, [ready])
+  }, [scriptLoaded])
 
   return (
     <div>
       <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
-        Localisation * <span className="text-gray-400 font-normal">(tapez une adresse, quartier ou ville)</span>
+        Localisation * <span className="text-gray-400 font-normal">(tapez un quartier, ville ou adresse)</span>
       </label>
 
-      {/* Container pour l'élément Google Places */}
-      <div ref={containerRef}
-        style={{ borderRadius: 8, overflow: 'hidden', border: `2px solid ${error ? '#EF4444' : confirmed ? BLUE : '#e5e7eb'}`, transition: 'border-color 0.2s' }}
-        className="w-full" />
+      {/* ✅ Container sans overflow:hidden — le dropdown Google peut s'afficher librement */}
+      <div
+        ref={containerRef}
+        style={{
+          width: '100%',
+          position: 'relative',
+          zIndex: 50,
+          borderRadius: 8,
+          border: `2px solid ${error ? '#EF4444' : confirmed ? BLUE : '#e5e7eb'}`,
+          // ✅ PAS de overflow:hidden ici
+        }}
+      />
 
-      {!ready && (
-        <p className="text-xs text-gray-400 mt-1">⏳ Chargement de l'autocomplete…</p>
-      )}
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-
-      {confirmed && displayText && (
-        <p className="text-xs mt-1 font-semibold" style={{ color: BLUE }}>
-          ✓ {displayText}
+      {!scriptLoaded && (
+        <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+          <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+          Chargement…
         </p>
+      )}
+
+      {error && !confirmed && (
+        <p className="text-xs text-red-500 mt-1">{error}</p>
+      )}
+
+      {/* ✅ Encadré vert de confirmation */}
+      {confirmed && (
+        <div className="mt-2 p-3 rounded-lg" style={{ background: '#F0FDF4', border: '1px solid #86EFAC' }}>
+          <p className="text-xs font-semibold mb-2" style={{ color: '#16A34A' }}>✓ Localisation confirmée</p>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            {confirmed.wilaya  && <div><span className="text-gray-400 block mb-0.5">Wilaya</span><strong className="text-gray-800">{confirmed.wilaya}</strong></div>}
+            {confirmed.commune && <div><span className="text-gray-400 block mb-0.5">Commune</span><strong className="text-gray-800">{confirmed.commune}</strong></div>}
+            {confirmed.quartier && <div><span className="text-gray-400 block mb-0.5">Quartier</span><strong className="text-gray-800">{confirmed.quartier}</strong></div>}
+          </div>
+          {confirmed.lat !== 0 && (
+            <p className="text-xs text-gray-400 mt-1">📍 {confirmed.lat.toFixed(4)}, {confirmed.lng.toFixed(4)}</p>
+          )}
+        </div>
       )}
     </div>
   )
@@ -265,29 +263,26 @@ export default function PostAnnonce() {
   const [step, setStep]         = useState(1)
   const [limitReached, setLimitReached] = useState(false)
 
-  const set = (field: keyof FormState, value: any) =>
-    setForm(prev => ({ ...prev, [field]: value }))
+  const set = (field: keyof FormState, value: any) => setForm(prev => ({ ...prev, [field]: value }))
 
-  const toggleDocType = (key: string) =>
-    setForm(prev => ({
-      ...prev,
-      document_types: prev.document_types.includes(key)
-        ? prev.document_types.filter(d => d !== key)
-        : [...prev.document_types, key],
-    }))
+  const toggleDocType = (key: string) => setForm(prev => ({
+    ...prev,
+    document_types: prev.document_types.includes(key)
+      ? prev.document_types.filter(d => d !== key)
+      : [...prev.document_types, key],
+  }))
 
-  const toggleAmenity = (key: string) =>
-    setForm(prev => ({
-      ...prev,
-      amenities: prev.amenities.includes(key)
-        ? prev.amenities.filter(a => a !== key)
-        : [...prev.amenities, key],
-    }))
+  const toggleAmenity = (key: string) => setForm(prev => ({
+    ...prev,
+    amenities: prev.amenities.includes(key)
+      ? prev.amenities.filter(a => a !== key)
+      : [...prev.amenities, key],
+  }))
 
   const handlePhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     const remaining = 10 - photos.length
-    if (files.length > remaining) { setError(`Maximum 10 photos.`); return }
+    if (files.length > remaining) { setError('Maximum 10 photos.'); return }
     setError('')
     setPhotos(prev => [...prev, ...files.slice(0, remaining)])
     setPreviews(prev => [...prev, ...files.slice(0, remaining).map(f => URL.createObjectURL(f))])
@@ -302,7 +297,7 @@ export default function PostAnnonce() {
   const validateStep = () => {
     setError(''); setLocError('')
     if (step === 2 && !form.surface) { setError('La superficie est obligatoire.'); return false }
-    if (step === 3 && !form.wilaya)  { setLocError('Veuillez sélectionner une localisation via la barre de recherche.'); return false }
+    if (step === 3 && !form.wilaya)  { setLocError('Veuillez sélectionner une localisation dans la liste.'); return false }
     if (step === 4) {
       if (!form.price)        { setError('Le prix est obligatoire.'); return false }
       if (!form.phone.trim()) { setError('Le numéro de téléphone est obligatoire.'); return false }
@@ -332,34 +327,23 @@ export default function PostAnnonce() {
       }
 
       const { error: insertError } = await supabase.from('listings').insert({
-        user_id:        user.id,
-        title:          autoTitle,
-        description:    form.description.trim(),
-        type:           form.type,
-        transaction:    form.transaction,
-        document_type:  form.document_types[0] || null,
-        document_types: form.document_types,
-        price:          Number(form.price.replace(/\s/g, '')),
-        surface:        parseFloat(form.surface),
-        rooms:          form.rooms     ? parseInt(form.rooms)     : null,
-        bedrooms:       form.bedrooms  ? parseInt(form.bedrooms)  : null,
-        bathrooms:      form.bathrooms ? parseInt(form.bathrooms) : null,
-        floor:          form.floor     ? parseInt(form.floor)     : null,
-        wilaya:         form.wilaya,
-        commune:        form.commune.trim()  || null,
-        quartier:       form.quartier.trim() || null,
-        lat:            form.lat,
-        lng:            form.lng,
-        amenities:      form.amenities,
-        photos:         photoUrls,
-        phone:          form.phone.trim(),
-        whatsapp:       form.whatsapp.trim() || null,
-        status:         'active',
+        user_id: user.id, title: autoTitle, description: form.description.trim(),
+        type: form.type, transaction: form.transaction,
+        document_type: form.document_types[0] || null, document_types: form.document_types,
+        price: Number(form.price.replace(/\s/g, '')), surface: parseFloat(form.surface),
+        rooms: form.rooms ? parseInt(form.rooms) : null,
+        bedrooms: form.bedrooms ? parseInt(form.bedrooms) : null,
+        bathrooms: form.bathrooms ? parseInt(form.bathrooms) : null,
+        floor: form.floor ? parseInt(form.floor) : null,
+        wilaya: form.wilaya, commune: form.commune.trim() || null,
+        quartier: form.quartier.trim() || null, lat: form.lat, lng: form.lng,
+        amenities: form.amenities, photos: photoUrls,
+        phone: form.phone.trim(), whatsapp: form.whatsapp.trim() || null, status: 'active',
       })
 
       if (insertError) {
         const msg = insertError.message ?? ''
-        if (msg.toLowerCase().includes('limite') || msg.toLowerCase().includes('3 annonces') || insertError.code === 'P0001') {
+        if (msg.toLowerCase().includes('limite') || insertError.code === 'P0001') {
           setLimitReached(true); return
         }
         throw insertError
@@ -367,11 +351,8 @@ export default function PostAnnonce() {
       navigate('/mes-annonces')
     } catch (err: unknown) {
       const msg = (err as any)?.message ?? 'Une erreur est survenue.'
-      if (msg.toLowerCase().includes('limite') || msg.toLowerCase().includes('3 annonces')) {
-        setLimitReached(true)
-      } else {
-        setError(msg)
-      }
+      if (msg.toLowerCase().includes('limite')) setLimitReached(true)
+      else setError(msg)
     } finally {
       setLoading(false)
     }
@@ -386,7 +367,7 @@ export default function PostAnnonce() {
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: 'Lato, sans-serif' }}>
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-gray-800 transition">
+          <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-gray-800">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -529,31 +510,17 @@ export default function PostAnnonce() {
                 </div>
               )}
 
-              {/* ÉTAPE 3 — Google Places nouvelle API */}
+              {/* ÉTAPE 3 — Google PlaceAutocompleteElement */}
               {step === 3 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Localisation</h2>
-
                   <LocationAutocomplete
-                    onSelect={({ wilaya, commune, quartier, lat, lng, text }) => {
+                    onSelect={data => {
                       setLocError('')
-                      setForm(prev => ({ ...prev, wilaya, commune, quartier, lat, lng, locationText: text }))
+                      setForm(prev => ({ ...prev, wilaya: data.wilaya, commune: data.commune, quartier: data.quartier, lat: data.lat, lng: data.lng }))
                     }}
                     error={locError}
                   />
-
-                  {form.wilaya && (
-                    <div className="p-3 rounded-lg" style={{ background: '#F0FDF4', border: '1px solid #86EFAC' }}>
-                      <p className="text-xs text-green-600 font-semibold mb-2">✓ Localisation confirmée</p>
-                      <div className="grid grid-cols-3 gap-2 text-xs text-gray-700">
-                        <div><span className="text-gray-400 block mb-0.5">Wilaya</span><strong>{form.wilaya}</strong></div>
-                        {form.commune  && <div><span className="text-gray-400 block mb-0.5">Commune</span><strong>{form.commune}</strong></div>}
-                        {form.quartier && <div><span className="text-gray-400 block mb-0.5">Quartier</span><strong>{form.quartier}</strong></div>}
-                      </div>
-                      {form.lat && <p className="text-xs text-gray-400 mt-2">📍 {form.lat.toFixed(5)}, {form.lng?.toFixed(5)}</p>}
-                    </div>
-                  )}
-
                   {previewTitle && (
                     <div className="p-3 rounded-lg" style={{ background: '#EEF2FF' }}>
                       <p className="text-xs text-gray-500 mb-1">Titre généré :</p>
@@ -567,20 +534,18 @@ export default function PostAnnonce() {
               {step === 4 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Photos & Prix</h2>
-
                   {previewTitle && (
                     <div className="p-3 rounded-lg" style={{ background: '#EEF2FF' }}>
                       <p className="text-xs text-gray-500 mb-1">Votre annonce sera publiée sous :</p>
                       <p className="text-sm font-bold" style={{ color: BLUE }}>{previewTitle}</p>
                     </div>
                   )}
-
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">
                       Photos <span className="text-gray-400 font-normal">({photos.length}/10)</span>
                     </label>
                     <button onClick={() => fileInputRef.current?.click()} disabled={photos.length >= 10}
-                      className="w-full border-2 border-dashed rounded-xl py-8 flex flex-col items-center gap-2 transition-all"
+                      className="w-full border-2 border-dashed rounded-xl py-8 flex flex-col items-center gap-2"
                       style={{ borderColor: photos.length >= 10 ? '#e5e7eb' : BLUE, background: photos.length >= 10 ? '#f9fafb' : '#f5f8ff', opacity: photos.length >= 10 ? 0.5 : 1 }}>
                       <svg className="w-8 h-8" fill="none" stroke={BLUE} viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -591,8 +556,7 @@ export default function PostAnnonce() {
                       </span>
                       <span className="text-xs text-gray-400">JPG, PNG, WEBP — max 10 photos</span>
                     </button>
-                    <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp"
-                      multiple className="hidden" onChange={handlePhotos} />
+                    <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={handlePhotos} />
                     {previews.length > 0 && (
                       <div className="grid grid-cols-3 gap-2 mt-3">
                         {previews.map((src, i) => (
@@ -606,7 +570,6 @@ export default function PostAnnonce() {
                       </div>
                     )}
                   </div>
-
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
                       Prix * <span className="text-gray-400 font-normal">(en DZD)</span>
@@ -620,11 +583,8 @@ export default function PostAnnonce() {
                         {form.transaction === 'location' ? 'DA/mois' : 'DA'}
                       </span>
                     </div>
-                    {form.price && (
-                      <p className="text-xs mt-1 font-semibold" style={{ color: BLUE }}>≈ {formatPriceLabel(form.price)}</p>
-                    )}
+                    {form.price && <p className="text-xs mt-1 font-semibold" style={{ color: BLUE }}>≈ {formatPriceLabel(form.price)}</p>}
                   </div>
-
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
                       Téléphone * <span className="text-gray-400 font-normal">(affiché aux acheteurs)</span>
@@ -637,7 +597,6 @@ export default function PostAnnonce() {
                         style={{ borderColor: form.phone ? BLUE : '#e5e7eb' }} />
                     </div>
                   </div>
-
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
                       WhatsApp <span className="text-gray-400 font-normal">(optionnel)</span>
@@ -650,7 +609,6 @@ export default function PostAnnonce() {
                         style={{ borderColor: form.whatsapp ? '#25D366' : '#e5e7eb' }} />
                     </div>
                   </div>
-
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">Description</label>
                     <textarea value={form.description} onChange={e => set('description', e.target.value)}
@@ -676,9 +634,7 @@ export default function PostAnnonce() {
                   </button>
                 )}
                 {step < 4 ? (
-                  <button onClick={nextStep}
-                    className="flex-1 py-3 rounded-xl text-sm font-bold text-white"
-                    style={{ background: BLUE }}>
+                  <button onClick={nextStep} className="flex-1 py-3 rounded-xl text-sm font-bold text-white" style={{ background: BLUE }}>
                     Suivant →
                   </button>
                 ) : (
