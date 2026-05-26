@@ -69,106 +69,93 @@ const initialForm: FormState = {
 
 const BLUE = '#1B4FD8'
 
-// ── Google Places Autocomplete ────────────────────────────────────────────────
+// ── Autocomplete Google Places (approche classique sur <input>) ───────────────
 function LocationAutocomplete({ onSelect, error }: {
   onSelect: (data: LocationData) => void
   error?: string
 }) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [ready, setReady]         = useState(false)
   const [confirmed, setConfirmed] = useState<LocationData | null>(null)
-  const [scriptLoaded, setScriptLoaded] = useState(false)
+  const [inputVal, setInputVal]   = useState('')
 
   // Charge le script Google Maps
   useEffect(() => {
     const key = import.meta.env.VITE_GOOGLE_PLACES_API_KEY
-    if (!key) { console.error('VITE_GOOGLE_PLACES_API_KEY manquante'); return }
+    if (!key) return
 
-    // Script déjà chargé
-    if ((window as any).google?.maps?.places) { setScriptLoaded(true); return }
+    const tryInit = () => {
+      const g = (window as any).google
+      if (g?.maps?.places?.Autocomplete) { setReady(true); return true }
+      return false
+    }
+
+    if (tryInit()) return
 
     const existing = document.querySelector('script[data-gplaces]')
     if (existing) {
-      existing.addEventListener('load', () => setScriptLoaded(true))
+      existing.addEventListener('load', () => { setTimeout(tryInit, 300) })
       return
     }
 
     const script = document.createElement('script')
-    // v=beta requis pour PlaceAutocompleteElement
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&v=beta&language=fr&loading=async`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&language=fr`
     script.async = true
-    script.defer = true
     script.setAttribute('data-gplaces', '1')
-    script.onload = () => setScriptLoaded(true)
-    script.onerror = () => console.error('Échec chargement Google Maps script')
+    script.onload = () => setTimeout(() => setReady(true), 300)
     document.head.appendChild(script)
   }, [])
 
-  // Monte le PlaceAutocompleteElement une fois le script chargé
+  // Attache Autocomplete sur l'input une fois prêt
   useEffect(() => {
-    if (!scriptLoaded || !containerRef.current) return
+    if (!ready || !inputRef.current) return
 
     const g = (window as any).google
-    if (!g?.maps?.places?.PlaceAutocompleteElement) {
-      console.error('PlaceAutocompleteElement non disponible')
-      return
-    }
+    if (!g?.maps?.places?.Autocomplete) return
 
-    // Vide le container
-    containerRef.current.innerHTML = ''
-
-    // Crée l'élément natif Google
-    const el = new g.maps.places.PlaceAutocompleteElement({
+    const autocomplete = new g.maps.places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: 'dz' },
+      fields: ['address_components', 'geometry', 'formatted_address'],
       types: ['geocode'],
     })
 
-    // Injecte dans le DOM — ✅ PAS de overflow:hidden ici
-    containerRef.current.appendChild(el)
+    const listener = autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace()
+      if (!place?.geometry) return
 
-    // Écoute la sélection
-    el.addEventListener('gmp-placeselect', async (event: any) => {
-      try {
-        const place = event.place
-        await place.fetchFields({
-          fields: ['addressComponents', 'location', 'formattedAddress'],
-        })
+      const components = place.address_components || []
+      let wilaya = '', commune = '', quartier = ''
 
-        const components: any[] = place.addressComponents || []
-        let wilaya = '', commune = '', quartier = ''
-
-        for (const c of components) {
-          const types = c.types || []
-          if (types.includes('administrative_area_level_1')) wilaya  = c.longText || c.longName || ''
-          if (types.includes('locality'))                    commune = c.longText || c.longName || ''
-          if (types.includes('sublocality_level_1') || types.includes('sublocality') || types.includes('neighborhood'))
-            quartier = c.longText || c.longName || ''
-        }
-
-        // Nettoyage "Wilaya de X" → "X"
-        wilaya = wilaya.replace(/^wilaya\s+d[e']?\s*/i, '').trim()
-        const match = WILAYAS.find(w =>
-          wilaya.toLowerCase().includes(w.toLowerCase()) ||
-          w.toLowerCase().includes(wilaya.toLowerCase())
-        )
-        if (match) wilaya = match
-
-        const lat  = place.location?.lat() ?? 0
-        const lng  = place.location?.lng() ?? 0
-        const text = place.formattedAddress || ''
-
-        const data: LocationData = { wilaya, commune, quartier, lat, lng, text }
-        setConfirmed(data)
-        onSelect(data)
-      } catch (err) {
-        console.error('Erreur extraction place:', err)
+      for (const c of components) {
+        const t = c.types || []
+        if (t.includes('administrative_area_level_1')) wilaya  = c.long_name
+        if (t.includes('locality'))                    commune = c.long_name
+        if (t.includes('sublocality_level_1') || t.includes('sublocality') || t.includes('neighborhood'))
+          quartier = c.long_name
       }
+
+      // Nettoyage "Wilaya de X" → "X"
+      wilaya = wilaya.replace(/^wilaya\s+d[e']?\s*/i, '').trim()
+      const match = WILAYAS.find(w =>
+        wilaya.toLowerCase().includes(w.toLowerCase()) ||
+        w.toLowerCase().includes(wilaya.toLowerCase())
+      )
+      if (match) wilaya = match
+
+      const lat  = place.geometry.location.lat()
+      const lng  = place.geometry.location.lng()
+      const text = place.formatted_address || inputRef.current?.value || ''
+
+      const data: LocationData = { wilaya, commune, quartier, lat, lng, text }
+      setConfirmed(data)
+      setInputVal(text)
+      onSelect(data)
     })
 
     return () => {
-      // Cleanup
-      if (containerRef.current) containerRef.current.innerHTML = ''
+      g.maps.event.removeListener(listener)
     }
-  }, [scriptLoaded])
+  }, [ready])
 
   return (
     <div>
@@ -176,40 +163,52 @@ function LocationAutocomplete({ onSelect, error }: {
         Localisation * <span className="text-gray-400 font-normal">(tapez un quartier, ville ou adresse)</span>
       </label>
 
-      {/* ✅ Container sans overflow:hidden — le dropdown Google peut s'afficher librement */}
-      <div
-        ref={containerRef}
-        style={{
-          width: '100%',
-          position: 'relative',
-          zIndex: 50,
-          borderRadius: 8,
-          border: `2px solid ${error ? '#EF4444' : confirmed ? BLUE : '#e5e7eb'}`,
-          // ✅ PAS de overflow:hidden ici
-        }}
-      />
+      <div style={{ position: 'relative' }}>
+        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1 }}>
+          <svg width={16} height={16} fill="none" stroke={confirmed ? BLUE : '#9CA3AF'} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </span>
 
-      {!scriptLoaded && (
+        {/* ✅ Input standard — Google Autocomplete s'y attache */}
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputVal}
+          onChange={e => { setInputVal(e.target.value); setConfirmed(null) }}
+          placeholder={ready ? 'Ex: Dely Ibrahim · Hydra · Oran centre...' : 'Chargement…'}
+          disabled={!ready}
+          className="w-full border-2 rounded-lg text-sm outline-none transition-all"
+          style={{
+            padding: '10px 12px 10px 38px',
+            borderColor: error && !confirmed ? '#EF4444' : confirmed ? BLUE : '#e5e7eb',
+            background: ready ? '#fff' : '#f9fafb',
+          }}
+        />
+      </div>
+
+      {!ready && (
         <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
           <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
           </svg>
-          Chargement…
+          Chargement Google Maps…
         </p>
       )}
 
-      {error && !confirmed && (
+      {error && !confirmed && ready && (
         <p className="text-xs text-red-500 mt-1">{error}</p>
       )}
 
-      {/* ✅ Encadré vert de confirmation */}
+      {/* Encadré vert confirmation */}
       {confirmed && (
         <div className="mt-2 p-3 rounded-lg" style={{ background: '#F0FDF4', border: '1px solid #86EFAC' }}>
           <p className="text-xs font-semibold mb-2" style={{ color: '#16A34A' }}>✓ Localisation confirmée</p>
           <div className="grid grid-cols-3 gap-2 text-xs">
-            {confirmed.wilaya  && <div><span className="text-gray-400 block mb-0.5">Wilaya</span><strong className="text-gray-800">{confirmed.wilaya}</strong></div>}
-            {confirmed.commune && <div><span className="text-gray-400 block mb-0.5">Commune</span><strong className="text-gray-800">{confirmed.commune}</strong></div>}
+            {confirmed.wilaya   && <div><span className="text-gray-400 block mb-0.5">Wilaya</span><strong className="text-gray-800">{confirmed.wilaya}</strong></div>}
+            {confirmed.commune  && <div><span className="text-gray-400 block mb-0.5">Commune</span><strong className="text-gray-800">{confirmed.commune}</strong></div>}
             {confirmed.quartier && <div><span className="text-gray-400 block mb-0.5">Quartier</span><strong className="text-gray-800">{confirmed.quartier}</strong></div>}
           </div>
           {confirmed.lat !== 0 && (
@@ -313,7 +312,6 @@ export default function PostAnnonce() {
     try {
       const location  = form.commune.trim() || form.wilaya
       const autoTitle = `${TYPE_LABELS[form.type] || form.type} ${form.surface}m² à ${location}`
-
       const photoUrls: string[] = []
       for (const photo of photos) {
         const ext      = photo.name.split('.').pop()?.toLowerCase() || 'jpg'
@@ -325,7 +323,6 @@ export default function PostAnnonce() {
         const { data: urlData } = supabase.storage.from('listing-photos').getPublicUrl(path)
         photoUrls.push(urlData.publicUrl)
       }
-
       const { error: insertError } = await supabase.from('listings').insert({
         user_id: user.id, title: autoTitle, description: form.description.trim(),
         type: form.type, transaction: form.transaction,
@@ -340,7 +337,6 @@ export default function PostAnnonce() {
         amenities: form.amenities, photos: photoUrls,
         phone: form.phone.trim(), whatsapp: form.whatsapp.trim() || null, status: 'active',
       })
-
       if (insertError) {
         const msg = insertError.message ?? ''
         if (msg.toLowerCase().includes('limite') || insertError.code === 'P0001') {
@@ -409,7 +405,6 @@ export default function PostAnnonce() {
         <div className="bg-white rounded-xl shadow-sm border p-6">
           {limitReached ? <LimiteAtteinte onBack={() => setLimitReached(false)} /> : (
             <>
-              {/* ÉTAPE 1 */}
               {step === 1 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Type de bien</h2>
@@ -470,7 +465,6 @@ export default function PostAnnonce() {
                 </div>
               )}
 
-              {/* ÉTAPE 2 */}
               {step === 2 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Caractéristiques</h2>
@@ -510,7 +504,6 @@ export default function PostAnnonce() {
                 </div>
               )}
 
-              {/* ÉTAPE 3 — Google PlaceAutocompleteElement */}
               {step === 3 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Localisation</h2>
@@ -530,7 +523,6 @@ export default function PostAnnonce() {
                 </div>
               )}
 
-              {/* ÉTAPE 4 */}
               {step === 4 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Photos & Prix</h2>
