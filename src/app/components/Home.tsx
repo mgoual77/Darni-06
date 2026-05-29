@@ -142,243 +142,189 @@ export function Home() {
     <div style={{ minHeight: '100vh', background: '#F7F8FA', paddingBottom: isMobile ? 80 : 0 }}>
 
       {/* ── HERO ── */}
-      <div style={{
-        position: 'relative',
-        overflow: 'hidden',
-        height: isMobile ? 'auto' : 560,
-        minHeight: isMobile ? 480 : 'auto',
-        borderRadius: '0 0 32px 32px',
-        marginBottom: 40,
-      }}>
-        <img
-          src="/hero.png"
-          alt="Alger"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.65)' }}
-        />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(27,79,216,0.15) 0%, rgba(0,0,0,0.1) 100%)' }} />
-
-        <div style={{
-          position: 'relative',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: isMobile ? '80px 16px 24px' : '0 20px',
-          maxWidth: 680,
-          margin: '0 auto',
-          width: '100%',
-          boxSizing: 'border-box',
-        }}>
-          <h1 style={{
-            color: '#fff',
-            fontSize: isMobile ? '3rem' : '4.4rem',
-            fontWeight: 900,
-            letterSpacing: '-0.02em',
-            textAlign: 'center',
-            marginBottom: 8,
-            textShadow: '0 2px 16px rgba(0,0,0,0.45)',
-            lineHeight: 1.1,
-          }}>
-            Trouvez votre futur chez-vous.
-          </h1>
-          <p style={{
-            color: 'rgba(255,255,255,0.85)',
-            fontSize: isMobile ? '1.4rem' : '1.6rem',
-            fontWeight: 400,
-            textAlign: 'center',
-            marginBottom: isMobile ? 20 : 28,
-            textShadow: '0 1px 8px rgba(0,0,0,0.35)',
-          }}>
-            L'immobilier en Algérie, en toute sérénité.
-          </p>
-
-          {/* Search box */}
-          <div style={{
-            background: '#fff',
-            borderRadius: 16,
-            padding: '0 0 6px',
-            width: '100%',
-            maxWidth: 660,
-            boxShadow: '0 16px 60px rgba(0,0,0,0.35)',
-          }}>
-            {/* Onglets — scroll horizontal sur mobile */}
-            <div style={{
-              display: 'flex',
-              gap: 0,
-              padding: '0 6px',
-              borderBottom: '1px solid #F3F4F6',
-              overflowX: 'auto',
-            }}>
-              {HERO_TABS.map(({ label, badge }) => {
-                const active = heroTab === label;
-                return (
-                  <button key={label} onClick={() => setHeroTab(label)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 5,
-                      padding: '10px 10px',
-                      border: 'none',
-                      background: 'none',
-                      cursor: 'pointer',
-                      fontSize: isMobile ? '1.2rem' : '1.3rem',
-                      fontWeight: active ? 700 : 500,
-                      color: active ? '#1B4FD8' : '#6B7280',
-                      borderBottom: active ? '2px solid #1B4FD8' : '2px solid transparent',
-                      marginBottom: -1,
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}>
-                    {label}
-                    {badge && <span style={{ background: '#EF4444', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '1px 5px', borderRadius: 4 }}>{badge}</span>}
-                  </button>
-                );
-              })}
+      {isMobile ? (
+        /* ── MOBILE : image visible en haut, search box en dessous ── */
+        <div style={{ marginBottom: 24 }}>
+          {/* Image */}
+          <div style={{ position: 'relative', height: 240, overflow: 'hidden' }}>
+            <img
+              src="/hero.png"
+              alt="Darni"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center' }}
+            />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)' }} />
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 20px' }}>
+              <h1 style={{ color: '#fff', fontSize: '2.8rem', fontWeight: 900, textAlign: 'center', textShadow: '0 2px 12px rgba(0,0,0,0.6)', lineHeight: 1.15, marginBottom: 6 }}>
+                Trouvez votre futur chez-vous.
+              </h1>
+              <p style={{ color: 'rgba(255,255,255,0.92)', fontSize: '1.3rem', textAlign: 'center', textShadow: '0 1px 6px rgba(0,0,0,0.5)' }}>
+                L'immobilier en Algérie, en toute sérénité.
+              </p>
             </div>
+          </div>
 
-            {/* Ligne Acheter/Louer + input + bouton */}
-            <div style={{
-              padding: '10px 10px 0',
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              gap: 8,
-              alignItems: isMobile ? 'stretch' : 'center',
-            }}>
-              {/* Toggle Acheter/Louer */}
-              <div style={{ display: 'flex', gap: 4, background: '#F3F4F6', borderRadius: 10, padding: 3, flexShrink: 0 }}>
-                {(['Vente', 'Location'] as const).map(t => (
-                  <button key={t} onClick={() => setSearchType(t)}
-                    style={{
-                      flex: isMobile ? 1 : 'none',
-                      padding: '8px 16px',
-                      borderRadius: 8,
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: 700,
-                      fontSize: '1.3rem',
-                      background: searchType === t ? '#1B4FD8' : 'transparent',
-                      color: searchType === t ? '#fff' : '#6B7280',
-                      whiteSpace: 'nowrap',
-                      boxShadow: searchType === t ? '0 2px 6px rgba(27,79,216,0.3)' : 'none',
-                    }}>
-                    {t === 'Vente' ? 'Acheter' : 'Louer'}
-                  </button>
-                ))}
+          {/* Search box — chevauchement -20px sur l'image */}
+          <div style={{ margin: '0 12px', marginTop: -20, position: 'relative', zIndex: 10 }}>
+            <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
+              {/* Onglets */}
+              <div style={{ display: 'flex', padding: '0 6px', borderBottom: '1px solid #F3F4F6', overflowX: 'auto' }}>
+                {HERO_TABS.map(({ label, badge }) => {
+                  const active = heroTab === label;
+                  return (
+                    <button key={label} onClick={() => setHeroTab(label)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '10px 10px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem', fontWeight: active ? 700 : 500, color: active ? '#1B4FD8' : '#6B7280', borderBottom: active ? '2px solid #1B4FD8' : '2px solid transparent', marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      {label}
+                      {badge && <span style={{ background: '#EF4444', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '1px 5px', borderRadius: 4 }}>{badge}</span>}
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Input localisation */}
-              <div style={{ position: 'relative', flex: 1 }}>
-                <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9CA3AF' }} />
-                <input
-                  type="text"
-                  placeholder="Ville, quartier, ou wilaya..."
-                  value={searchText}
-                  onChange={e => setSearchText(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px 12px 40px',
-                    background: '#F9FAFB',
-                    border: '1.5px solid #E5E7EB',
-                    borderRadius: 10,
-                    fontSize: '1.4rem',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                  onFocus={e  => (e.target as HTMLElement).style.borderColor = '#1B4FD8'}
-                  onBlur={e   => (e.target as HTMLElement).style.borderColor = '#E5E7EB'}
-                />
-              </div>
-
-              {/* Bouton Rechercher */}
-              <button
-                onClick={() => navigate('/search')}
-                style={{
-                  background: '#1B4FD8',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 10,
-                  padding: '12px 20px',
-                  fontSize: '1.4rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  flexShrink: 0,
-                  boxShadow: '0 4px 12px rgba(27,79,216,0.3)',
-                }}>
-                <Search style={{ width: 16, height: 16 }} />
-                {isMobile ? 'Rechercher' : 'Rechercher'}
-              </button>
-            </div>
-
-            {/* Filtres secondaires */}
-            <div style={{ padding: '8px 10px 10px', display: 'flex', gap: 8, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-              {[
-                { label: 'Type',     options: ['Appartement', 'Maison', 'Villa', 'Terrain'] },
-                { label: 'Chambres', options: ['Studio', '1', '2', '3', '4+'] },
-              ].map(f => (
-                <div key={f.label} style={{ position: 'relative', flex: 1, minWidth: isMobile ? 'calc(50% - 4px)' : 'auto' }}>
-                  <select style={{ width: '100%', padding: '10px 32px 10px 14px', background: '#fff', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: '1.3rem', color: '#374151', appearance: 'none', outline: 'none', cursor: 'pointer', fontWeight: 500 }}>
-                    <option>{f.label}</option>
-                    {f.options.map(o => <option key={o}>{o}</option>)}
-                  </select>
-                  <ChevronDown style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#9CA3AF', pointerEvents: 'none' }} />
+              <div style={{ padding: '12px 12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {/* Toggle Acheter / Louer */}
+                <div style={{ display: 'flex', gap: 4, background: '#F3F4F6', borderRadius: 10, padding: 3 }}>
+                  {(['Vente', 'Location'] as const).map(t => (
+                    <button key={t} onClick={() => setSearchType(t)}
+                      style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '1.4rem', background: searchType === t ? '#1B4FD8' : 'transparent', color: searchType === t ? '#fff' : '#6B7280', transition: 'all 0.15s' }}>
+                      {t === 'Vente' ? 'Acheter' : 'Louer'}
+                    </button>
+                  ))}
                 </div>
-              ))}
 
-              {/* Prix dropdown */}
-              <div style={{ position: 'relative', flex: 1, minWidth: isMobile ? '100%' : 'auto' }}>
-                <button
-                  onClick={() => setShowPriceDropdown(!showPriceDropdown)}
-                  style={{ width: '100%', padding: '7px 12px', background: showPriceDropdown ? '#EEF2FF' : '#fff', border: `1.5px solid ${showPriceDropdown ? '#1B4FD8' : '#E5E7EB'}`, borderRadius: 8, fontSize: '1.2rem', color: priceMin || priceMax ? '#1B4FD8' : '#374151', fontWeight: priceMin || priceMax ? 700 : 400, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-                  <span>{priceMin || priceMax ? `${priceMin || '0'} — ${priceMax || '∞'} DA` : 'Prix (DA)'}</span>
-                  <ChevronDown style={{ width: 14, height: 14, color: '#9CA3AF', transform: showPriceDropdown ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+                {/* Input */}
+                <div style={{ position: 'relative' }}>
+                  <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9CA3AF' }} />
+                  <input type="text" placeholder="Ville, quartier, ou wilaya..." value={searchText} onChange={e => setSearchText(e.target.value)}
+                    style={{ width: '100%', padding: '13px 14px 13px 40px', background: '#F9FAFB', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: '1.4rem', outline: 'none', boxSizing: 'border-box' }}
+                    onFocus={e => (e.target as HTMLElement).style.borderColor = '#1B4FD8'}
+                    onBlur={e  => (e.target as HTMLElement).style.borderColor = '#E5E7EB'} />
+                </div>
+
+                {/* Rechercher */}
+                <button onClick={() => navigate('/search')}
+                  style={{ width: '100%', background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 0', fontSize: '1.5rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 12px rgba(27,79,216,0.3)' }}>
+                  <Search style={{ width: 17, height: 17 }} /> Rechercher
                 </button>
 
-                {showPriceDropdown && (
-                  <div style={{ position: 'absolute', top: 40, left: 0, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 100, padding: 16, minWidth: 280, right: isMobile ? 0 : 'auto' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-                      {[
-                        { label: 'Minimum', val: priceMin, set: setPriceMin, placeholder: '0' },
-                        { label: 'Maximum', val: priceMax, set: setPriceMax, placeholder: 'Illimité' },
-                      ].map(({ label, val, set, placeholder }) => (
-                        <div key={label}>
-                          <label style={{ display: 'block', fontSize: '1.1rem', color: '#9CA3AF', fontWeight: 500, marginBottom: 6 }}>{label}</label>
-                          <input type="number" value={val} onChange={e => set(e.target.value)} placeholder={placeholder}
-                            style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #E5E7EB', borderRadius: 8, fontSize: '1.3rem', outline: 'none', boxSizing: 'border-box' }}
-                            onFocus={e => (e.target as HTMLElement).style.borderColor = '#1B4FD8'}
-                            onBlur={e  => (e.target as HTMLElement).style.borderColor = '#E5E7EB'} />
-                        </div>
-                      ))}
+                {/* Filtres Type + Chambres */}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[
+                    { label: 'Type',     options: ['Appartement', 'Maison', 'Villa', 'Terrain'] },
+                    { label: 'Chambres', options: ['Studio', '1', '2', '3', '4+'] },
+                  ].map(f => (
+                    <div key={f.label} style={{ position: 'relative', flex: 1 }}>
+                      <select style={{ width: '100%', padding: '10px 28px 10px 12px', background: '#fff', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: '1.3rem', color: '#374151', appearance: 'none', outline: 'none' }}>
+                        <option>{f.label}</option>
+                        {f.options.map(o => <option key={o}>{o}</option>)}
+                      </select>
+                      <ChevronDown style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#9CA3AF', pointerEvents: 'none' }} />
                     </div>
-                    <p style={{ fontSize: '1.1rem', color: '#9CA3AF', marginBottom: 6 }}>Suggestions</p>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-                      {[
-                        { label: '< 5M DA',   min: '',         max: '5000000'  },
-                        { label: '5–10M DA',  min: '5000000',  max: '10000000' },
-                        { label: '10–20M DA', min: '10000000', max: '20000000' },
-                        { label: '> 20M DA',  min: '20000000', max: ''         },
-                      ].map(s => (
-                        <button key={s.label} onClick={() => { setPriceMin(s.min); setPriceMax(s.max); }}
-                          style={{ padding: '4px 10px', borderRadius: 20, border: '1.5px solid', borderColor: priceMin === s.min && priceMax === s.max ? '#1B4FD8' : '#E5E7EB', background: priceMin === s.min && priceMax === s.max ? '#EEF2FF' : '#fff', color: priceMin === s.min && priceMax === s.max ? '#1B4FD8' : '#374151', fontSize: '1.1rem', fontWeight: 500, cursor: 'pointer' }}>
-                          {s.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                      <button onClick={() => { setPriceMin(''); setPriceMax(''); }} style={{ padding: '9px 0', border: '1.5px solid #E5E7EB', borderRadius: 8, background: '#fff', color: '#374151', fontSize: '1.3rem', fontWeight: 600, cursor: 'pointer' }}>Réinitialiser</button>
-                      <button onClick={() => setShowPriceDropdown(false)} style={{ padding: '9px 0', border: 'none', borderRadius: 8, background: '#1B4FD8', color: '#fff', fontSize: '1.3rem', fontWeight: 700, cursor: 'pointer' }}>Valider</button>
-                    </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        /* ── DESKTOP : image + overlay + search box superposée ── */
+        <div style={{ position: 'relative', overflow: 'hidden', height: 560, borderRadius: '0 0 32px 32px', marginBottom: 40 }}>
+          <img src="/hero.png" alt="Darni"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.65)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(27,79,216,0.15) 0%, rgba(0,0,0,0.1) 100%)' }} />
+          <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '0 20px', maxWidth: 680, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+            <h1 style={{ color: '#fff', fontSize: '4.4rem', fontWeight: 900, letterSpacing: '-0.02em', textAlign: 'center', marginBottom: 8, textShadow: '0 2px 16px rgba(0,0,0,0.45)', lineHeight: 1.1 }}>
+              Trouvez votre futur chez-vous.
+            </h1>
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1.6rem', fontWeight: 400, textAlign: 'center', marginBottom: 28, textShadow: '0 1px 8px rgba(0,0,0,0.35)' }}>
+              L'immobilier en Algérie, en toute sérénité.
+            </p>
+            {/* Search box desktop */}
+            <div style={{ background: '#fff', borderRadius: 16, padding: '0 0 6px', width: '100%', maxWidth: 660, boxShadow: '0 16px 60px rgba(0,0,0,0.35)' }}>
+              <div style={{ display: 'flex', gap: 0, padding: '0 6px', borderBottom: '1px solid #F3F4F6', overflowX: 'auto' }}>
+                {HERO_TABS.map(({ label, badge }) => {
+                  const active = heroTab === label;
+                  return (
+                    <button key={label} onClick={() => setHeroTab(label)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '10px 12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.3rem', fontWeight: active ? 700 : 500, color: active ? '#1B4FD8' : '#6B7280', borderBottom: active ? '2px solid #1B4FD8' : '2px solid transparent', marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      {label}
+                      {badge && <span style={{ background: '#EF4444', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '1px 5px', borderRadius: 4 }}>{badge}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ padding: '10px 10px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 4, background: '#F3F4F6', borderRadius: 10, padding: 3, flexShrink: 0 }}>
+                  {(['Vente', 'Location'] as const).map(t => (
+                    <button key={t} onClick={() => setSearchType(t)}
+                      style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '1.3rem', background: searchType === t ? '#1B4FD8' : 'transparent', color: searchType === t ? '#fff' : '#6B7280', whiteSpace: 'nowrap', boxShadow: searchType === t ? '0 2px 6px rgba(27,79,216,0.3)' : 'none' }}>
+                      {t === 'Vente' ? 'Acheter' : 'Louer'}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9CA3AF' }} />
+                  <input type="text" placeholder="Ville, quartier, ou wilaya..." value={searchText} onChange={e => setSearchText(e.target.value)}
+                    style={{ width: '100%', padding: '12px 14px 12px 40px', background: '#F9FAFB', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: '1.4rem', outline: 'none', boxSizing: 'border-box' }}
+                    onFocus={e => (e.target as HTMLElement).style.borderColor = '#1B4FD8'}
+                    onBlur={e  => (e.target as HTMLElement).style.borderColor = '#E5E7EB'} />
+                </div>
+                <button onClick={() => navigate('/search')}
+                  style={{ background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: '1.4rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 4px 12px rgba(27,79,216,0.3)' }}>
+                  <Search style={{ width: 16, height: 16 }} /> Rechercher
+                </button>
+              </div>
+              <div style={{ padding: '8px 10px 10px', display: 'flex', gap: 8 }}>
+                {[
+                  { label: 'Type',     options: ['Appartement', 'Maison', 'Villa', 'Terrain'] },
+                  { label: 'Chambres', options: ['Studio', '1', '2', '3', '4+'] },
+                ].map(f => (
+                  <div key={f.label} style={{ position: 'relative', flex: 1 }}>
+                    <select style={{ width: '100%', padding: '10px 32px 10px 14px', background: '#fff', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: '1.3rem', color: '#374151', appearance: 'none', outline: 'none', cursor: 'pointer', fontWeight: 500 }}>
+                      <option>{f.label}</option>
+                      {f.options.map(o => <option key={o}>{o}</option>)}
+                    </select>
+                    <ChevronDown style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#9CA3AF', pointerEvents: 'none' }} />
+                  </div>
+                ))}
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <button onClick={() => setShowPriceDropdown(!showPriceDropdown)}
+                    style={{ width: '100%', padding: '7px 12px', background: showPriceDropdown ? '#EEF2FF' : '#fff', border: `1.5px solid ${showPriceDropdown ? '#1B4FD8' : '#E5E7EB'}`, borderRadius: 8, fontSize: '1.2rem', color: priceMin || priceMax ? '#1B4FD8' : '#374151', fontWeight: priceMin || priceMax ? 700 : 400, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                    <span>{priceMin || priceMax ? `${priceMin || '0'} — ${priceMax || '∞'} DA` : 'Prix (DA)'}</span>
+                    <ChevronDown style={{ width: 14, height: 14, color: '#9CA3AF', transform: showPriceDropdown ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+                  </button>
+                  {showPriceDropdown && (
+                    <div style={{ position: 'absolute', top: 40, left: 0, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 100, padding: 16, minWidth: 280 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                        {[{ label: 'Minimum', val: priceMin, set: setPriceMin, placeholder: '0' }, { label: 'Maximum', val: priceMax, set: setPriceMax, placeholder: 'Illimité' }].map(({ label, val, set, placeholder }) => (
+                          <div key={label}>
+                            <label style={{ display: 'block', fontSize: '1.1rem', color: '#9CA3AF', fontWeight: 500, marginBottom: 6 }}>{label}</label>
+                            <input type="number" value={val} onChange={e => set(e.target.value)} placeholder={placeholder}
+                              style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #E5E7EB', borderRadius: 8, fontSize: '1.3rem', outline: 'none', boxSizing: 'border-box' }}
+                              onFocus={e => (e.target as HTMLElement).style.borderColor = '#1B4FD8'}
+                              onBlur={e  => (e.target as HTMLElement).style.borderColor = '#E5E7EB'} />
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+                        {[{ label: '< 5M DA', min: '', max: '5000000' }, { label: '5–10M DA', min: '5000000', max: '10000000' }, { label: '10–20M DA', min: '10000000', max: '20000000' }, { label: '> 20M DA', min: '20000000', max: '' }].map(s => (
+                          <button key={s.label} onClick={() => { setPriceMin(s.min); setPriceMax(s.max); }}
+                            style={{ padding: '4px 10px', borderRadius: 20, border: '1.5px solid', borderColor: priceMin === s.min && priceMax === s.max ? '#1B4FD8' : '#E5E7EB', background: priceMin === s.min && priceMax === s.max ? '#EEF2FF' : '#fff', color: priceMin === s.min && priceMax === s.max ? '#1B4FD8' : '#374151', fontSize: '1.1rem', fontWeight: 500, cursor: 'pointer' }}>
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <button onClick={() => { setPriceMin(''); setPriceMax(''); }} style={{ padding: '9px 0', border: '1.5px solid #E5E7EB', borderRadius: 8, background: '#fff', color: '#374151', fontSize: '1.3rem', fontWeight: 600, cursor: 'pointer' }}>Réinitialiser</button>
+                        <button onClick={() => setShowPriceDropdown(false)} style={{ padding: '9px 0', border: 'none', borderRadius: 8, background: '#1B4FD8', color: '#fff', fontSize: '1.3rem', fontWeight: 700, cursor: 'pointer' }}>Valider</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── BODY ── */}
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: `0 ${px}`, display: 'flex', flexDirection: 'column', gap: isMobile ? 32 : 48 }}>
