@@ -3,6 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { formatPrice } from '../../utils/formatPrice'
 
+// ── Hook mobile ───────────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return isMobile
+}
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface Listing {
   id: string
   title: string
@@ -28,6 +41,7 @@ interface Listing {
   created_at: string
 }
 
+// ── Labels ────────────────────────────────────────────────────────────────────
 const AMENITY_LABELS: Record<string, string> = {
   ascenseur: 'Ascenseur', parking: 'Parking', balcon: 'Balcon',
   terrasse: 'Terrasse', jardin: 'Jardin', piscine: 'Piscine',
@@ -42,6 +56,7 @@ const DOC_LABELS: Record<string, string> = {
   acte_notarie: 'Acte notarié', livret_foncier: 'Livret foncier', sans_titre: 'Sans titre',
 }
 
+// ── Couleurs ──────────────────────────────────────────────────────────────────
 const BLUE     = '#1B4FD8'
 const WA_GREEN = '#1DA462'
 const DARK     = '#111827'
@@ -50,6 +65,7 @@ const GRAY_LT  = '#9CA3AF'
 const BORDER   = '#E5E7EB'
 const BG       = '#F3F4F6'
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function extractPhotos(raw: any): string[] {
   const fb = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900'
   if (!raw || !Array.isArray(raw) || raw.length === 0) return [fb]
@@ -87,18 +103,14 @@ const IcoHeart = ({ filled }: { filled: boolean }) => (
 function RecoCard({ listing, onClick }: { listing: Listing; onClick: () => void }) {
   return (
     <div onClick={onClick}
-      style={{ background: '#fff', borderRadius: 12, border: `1px solid ${BORDER}`, overflow: 'hidden', cursor: 'pointer', flexShrink: 0, width: 240, transition: 'box-shadow 0.2s, transform 0.2s' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px rgba(0,0,0,0.10)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)' }}>
-      <div style={{ height: 145, overflow: 'hidden' }}>
+      style={{ background: '#fff', borderRadius: 12, border: `1px solid ${BORDER}`, overflow: 'hidden', cursor: 'pointer', flexShrink: 0, width: 220 }}>
+      <div style={{ height: 130, overflow: 'hidden' }}>
         <img src={firstPhoto(listing.photos)} alt={listing.title}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400' }} />
       </div>
-      <div style={{ padding: '12px 14px' }}>
-        <p style={{ fontSize: 16, fontWeight: 900, color: DARK, margin: '0 0 3px', letterSpacing: '-0.02em' }}>
+      <div style={{ padding: '10px 12px' }}>
+        <p style={{ fontSize: 15, fontWeight: 900, color: DARK, margin: '0 0 3px', letterSpacing: '-0.02em' }}>
           {formatPrice(listing.price, listing.transaction)}
         </p>
         <p style={{ fontSize: 12, color: GRAY, margin: '0 0 5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -117,6 +129,8 @@ function RecoCard({ listing, onClick }: { listing: Listing; onClick: () => void 
 export default function ListingDetail() {
   const { id }   = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
+
   const [listing, setListing]           = useState<Listing | null>(null)
   const [similar, setSimilar]           = useState<Listing[]>([])
   const [loading, setLoading]           = useState(true)
@@ -128,6 +142,7 @@ export default function ListingDetail() {
   useEffect(() => {
     if (!id) return
     setLoading(true)
+    // ✅ select('*') — photos est un champ JSON dans listings, PAS une table séparée
     supabase.from('listings').select('*').eq('id', id).single()
       .then(({ data, error }) => {
         if (!error && data) {
@@ -166,32 +181,30 @@ export default function ListingDetail() {
   const docs     = listing.document_types?.length ? listing.document_types : listing.document_type ? [listing.document_type] : []
   const refCode  = listing.id.slice(0, 8).toUpperCase()
   const descCut  = 300
-
-  // ✅ URL carte Google Maps Embed (gratuit, sans API key)
   const mapQuery = encodeURIComponent([listing.commune, listing.wilaya, 'Algérie'].filter(Boolean).join(', '))
   const mapUrl   = `https://maps.google.com/maps?q=${mapQuery}&z=14&output=embed`
+  const px       = isMobile ? '16px' : '24px'
 
   const stats = [
-    listing.surface   ? { icon: <IcoArea />, val: `${listing.surface} m²` } : null,
-    listing.bedrooms  ? { icon: <IcoBed />,  val: `${listing.bedrooms} Chambre${listing.bedrooms > 1 ? 's' : ''}` } : null,
-    listing.bathrooms ? { icon: <IcoBath />, val: `${listing.bathrooms} SDB` } : null,
-    listing.rooms     ? { icon: <IcoArea />, val: `${listing.rooms} Pièces` } : null,
+    listing.surface   ? { icon: <IcoArea />, val: `${listing.surface} m²` }                                : null,
+    listing.bedrooms  ? { icon: <IcoBed />,  val: `${listing.bedrooms} Ch.` }                              : null,
+    listing.bathrooms ? { icon: <IcoBath />, val: `${listing.bathrooms} SDB` }                             : null,
+    listing.rooms     ? { icon: <IcoArea />, val: `${listing.rooms} Pièces` }                              : null,
     listing.floor !== null && listing.floor !== undefined ? { icon: <IcoArea />, val: `Étage ${listing.floor}` } : null,
   ].filter(Boolean) as { icon: React.ReactNode; val: string }[]
 
-  // ✅ Tableau informations compact
   const infoRows = [
-    { label: 'Type',         value: TYPE_LABELS[listing.type] || listing.type },
-    { label: 'Transaction',  value: listing.transaction === 'vente' ? 'Vente' : 'Location' },
-    { label: 'Wilaya',       value: listing.wilaya },
-    { label: 'Commune',      value: listing.commune || '—' },
-    listing.quartier  ? { label: 'Quartier',     value: listing.quartier }        : null,
-    listing.surface   ? { label: 'Superficie',   value: `${listing.surface} m²` } : null,
-    listing.rooms     ? { label: 'Pièces',       value: `${listing.rooms}` }       : null,
-    listing.bedrooms  ? { label: 'Chambres',     value: `${listing.bedrooms}` }    : null,
-    listing.bathrooms ? { label: 'SDB',          value: `${listing.bathrooms}` }   : null,
-    listing.floor !== null && listing.floor !== undefined ? { label: 'Étage', value: `${listing.floor}` } : null,
-    docs.length > 0   ? { label: 'Document',     value: docs.map(d => DOC_LABELS[d] || d).join(' · ') } : null,
+    { label: 'Type',        value: TYPE_LABELS[listing.type] || listing.type },
+    { label: 'Transaction', value: listing.transaction === 'vente' ? 'Vente' : 'Location' },
+    { label: 'Wilaya',      value: listing.wilaya },
+    { label: 'Commune',     value: listing.commune || '—' },
+    listing.quartier  ? { label: 'Quartier',   value: listing.quartier }                                    : null,
+    listing.surface   ? { label: 'Superficie', value: `${listing.surface} m²` }                            : null,
+    listing.rooms     ? { label: 'Pièces',     value: `${listing.rooms}` }                                  : null,
+    listing.bedrooms  ? { label: 'Chambres',   value: `${listing.bedrooms}` }                              : null,
+    listing.bathrooms ? { label: 'SDB',        value: `${listing.bathrooms}` }                             : null,
+    listing.floor !== null && listing.floor !== undefined ? { label: 'Étage', value: `${listing.floor}` }  : null,
+    docs.length > 0   ? { label: 'Document',   value: docs.map(d => DOC_LABELS[d] || d).join(' · ') }     : null,
   ].filter(Boolean) as { label: string; value: string }[]
 
   const share = () => {
@@ -200,109 +213,139 @@ export default function ListingDetail() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: BG, fontFamily: 'Lato, sans-serif' }}>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
-        .mobile-cta { display: none; }
-        @media (max-width: 768px) { .mobile-cta { display: flex !important; } }
-      `}</style>
+    <div style={{ minHeight: '100vh', background: BG, fontFamily: 'Lato, sans-serif', paddingBottom: isMobile ? 90 : 0 }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fade{from{opacity:0}to{opacity:1}}`}</style>
 
-      {/* Fil d'Ariane */}
+      {/* ── Fil d'Ariane ── */}
       <div style={{ background: '#fff', borderBottom: `1px solid ${BORDER}` }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '10px 24px', fontSize: 12, color: GRAY_LT, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: GRAY_LT, fontSize: 12, padding: 0 }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = BLUE}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = GRAY_LT}>
-            ← Retour
-          </button>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: `10px ${px}`, fontSize: 12, color: GRAY_LT, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: GRAY_LT, fontSize: 12, padding: 0 }}>← Retour</button>
           <span>›</span><span>{listing.wilaya}</span>
           <span>›</span><span>{TYPE_LABELS[listing.type] || listing.type}</span>
-          <span>›</span>
-          <span style={{ color: '#374151', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>
-            {listing.title}
-          </span>
+          {!isMobile && (<><span>›</span><span style={{ color: '#374151', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>{listing.title}</span></>)}
         </div>
       </div>
 
-      {/* Galerie */}
-      <div style={{ background: BG, padding: '4px 0' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '2fr 1fr', height: 460, gap: 4, padding: '0 24px' }}>
-          <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px 0 0 12px', cursor: 'pointer', background: '#D1D5DB' }}
-            onClick={() => setShowModal(true)}>
-            <img src={photos[0]} alt={listing.title}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.03)'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
-              onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900' }} />
-            <button onClick={e => { e.stopPropagation(); setShowModal(true) }}
-              style={{ position: 'absolute', bottom: 14, left: 14, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'rgba(255,255,255,0.92)', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, color: DARK, cursor: 'pointer' }}>
-              <svg width={13} height={13} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Voir les {photos.length} photos
-            </button>
+      {/* ── Galerie ── */}
+      {isMobile ? (
+        /* ── Galerie mobile : image pleine largeur + dots ── */
+        <div style={{ position: 'relative', background: '#000', height: 280 }}>
+          <img
+            src={photos[activePhoto]}
+            alt={listing.title}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.95 }}
+            onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900' }}
+          />
+          {/* Chevrons */}
+          {activePhoto > 0 && (
+            <button onClick={() => setActivePhoto(p => p - 1)}
+              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.85)', border: 'none', borderRadius: '50%', width: 36, height: 36, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+          )}
+          {activePhoto < photos.length - 1 && (
+            <button onClick={() => setActivePhoto(p => p + 1)}
+              style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.85)', border: 'none', borderRadius: '50%', width: 36, height: 36, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+          )}
+          {/* Dots */}
+          {photos.length > 1 && (
+            <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 5 }}>
+              {photos.map((_, i) => (
+                <div key={i} onClick={() => setActivePhoto(i)}
+                  style={{ width: i === activePhoto ? 18 : 6, height: 6, borderRadius: 99, background: i === activePhoto ? '#fff' : 'rgba(255,255,255,0.5)', cursor: 'pointer', transition: 'all 0.2s' }} />
+              ))}
+            </div>
+          )}
+          {/* Compteur */}
+          <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(0,0,0,0.55)', borderRadius: 20, padding: '3px 10px', color: '#fff', fontSize: 12, fontWeight: 600 }}>
+            {activePhoto + 1} / {photos.length}
           </div>
-          <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr 1fr', gap: 4 }}>
-            {[1, 2, 3].map(i => (
-              <div key={i} style={{ position: 'relative', overflow: 'hidden', borderRadius: i === 1 ? '0 12px 0 0' : i === 3 ? '0 0 12px 0' : '0', cursor: 'pointer', background: '#CBD5E1' }}
-                onClick={() => { setActivePhoto(i); setShowModal(true) }}>
-                {photos[i] ? (
-                  <img src={photos[i]} alt={`Photo ${i + 1}`}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
-                    onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400' }} />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#CBD5E1' }}>
-                    <svg width={22} height={22} fill="none" stroke="#94A3B8" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                )}
-                {i === 3 && photos.length > 4 && (
-                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ color: '#fff', fontWeight: 700, fontSize: 13 }}>+{photos.length - 3} photos</span>
-                  </div>
-                )}
-              </div>
-            ))}
+          {/* Bouton agrandir */}
+          <button onClick={() => setShowModal(true)}
+            style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(255,255,255,0.88)', border: 'none', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: DARK, cursor: 'pointer' }}>
+            ⤢ Voir tout
+          </button>
+        </div>
+      ) : (
+        /* ── Galerie desktop : grille 2 colonnes ── */
+        <div style={{ background: BG, padding: '4px 0' }}>
+          <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '2fr 1fr', height: 460, gap: 4, padding: `0 ${px}` }}>
+            <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px 0 0 12px', cursor: 'pointer', background: '#D1D5DB' }}
+              onClick={() => setShowModal(true)}>
+              <img src={photos[0]} alt={listing.title}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.03)'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
+                onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900' }} />
+              <button onClick={e => { e.stopPropagation(); setShowModal(true) }}
+                style={{ position: 'absolute', bottom: 14, left: 14, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'rgba(255,255,255,0.92)', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, color: DARK, cursor: 'pointer' }}>
+                <svg width={13} height={13} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                Voir les {photos.length} photos
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr 1fr', gap: 4 }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} style={{ position: 'relative', overflow: 'hidden', borderRadius: i === 1 ? '0 12px 0 0' : i === 3 ? '0 0 12px 0' : '0', cursor: 'pointer', background: '#CBD5E1' }}
+                  onClick={() => { setActivePhoto(i); setShowModal(true) }}>
+                  {photos[i] ? (
+                    <img src={photos[i]} alt={`Photo ${i + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
+                      onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400' }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#CBD5E1' }}>
+                      <svg width={22} height={22} fill="none" stroke="#94A3B8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    </div>
+                  )}
+                  {i === 3 && photos.length > 4 && (
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ color: '#fff', fontWeight: 700, fontSize: 13 }}>+{photos.length - 3} photos</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Corps */}
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 24px 60px', display: 'flex', gap: 28, alignItems: 'flex-start' }}>
+      {/* ── Corps ── */}
+      <div style={{
+        maxWidth: 1280,
+        margin: '0 auto',
+        padding: isMobile ? `16px ${px} 20px` : `24px ${px} 60px`,
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? 14 : 28,
+        alignItems: 'flex-start',
+      }}>
 
-        {/* Gauche */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* ── Colonne gauche ── */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 16 }}>
 
           {/* Prix + infos */}
-          <div style={{ background: '#fff', borderRadius: 14, padding: '28px 32px', border: `1px solid ${BORDER}` }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ background: '#fff', borderRadius: 14, padding: isMobile ? '18px 16px' : '28px 32px', border: `1px solid ${BORDER}` }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <p style={{ fontSize: 11, color: GRAY, margin: '0 0 5px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+                <p style={{ fontSize: 11, color: GRAY, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
                   {listing.transaction === 'vente' ? 'Prix de vente' : 'Loyer mensuel'}
                 </p>
-                <p style={{ fontSize: 34, fontWeight: 900, color: DARK, margin: 0, letterSpacing: '-0.03em', lineHeight: 1 }}>
+                <p style={{ fontSize: isMobile ? 26 : 34, fontWeight: 900, color: DARK, margin: 0, letterSpacing: '-0.03em', lineHeight: 1 }}>
                   {formatPrice(listing.price, listing.transaction)}
                 </p>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={share}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', border: `1.5px solid ${BORDER}`, borderRadius: 8, background: '#fff', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = BG}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
-                  <IcoShare /> Partager
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '8px 12px' : '9px 16px', border: `1.5px solid ${BORDER}`, borderRadius: 8, background: '#fff', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <IcoShare /> {isMobile ? '' : 'Partager'}
                 </button>
                 <button onClick={() => setSaved(v => !v)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', border: `1.5px solid ${saved ? '#FCA5A5' : BORDER}`, borderRadius: 8, background: saved ? '#FEF2F2' : '#fff', color: saved ? '#EF4444' : '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
-                  <IcoHeart filled={saved} /> {saved ? 'Sauvegardé' : 'Sauvegarder'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '8px 12px' : '9px 16px', border: `1.5px solid ${saved ? '#FCA5A5' : BORDER}`, borderRadius: 8, background: saved ? '#FEF2F2' : '#fff', color: saved ? '#EF4444' : '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <IcoHeart filled={saved} /> {isMobile ? '' : (saved ? 'Sauvegardé' : 'Sauvegarder')}
                 </button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
               <span style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, color: '#fff', background: BLUE }}>
                 {TYPE_LABELS[listing.type] || listing.type}
               </span>
@@ -312,9 +355,9 @@ export default function ListingDetail() {
             </div>
 
             {stats.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', marginBottom: 16, gap: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                 {stats.map((s, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, paddingRight: i < stats.length - 1 ? 16 : 0, marginRight: i < stats.length - 1 ? 16 : 0, borderRight: i < stats.length - 1 ? `1px solid ${BORDER}` : 'none', fontSize: 14, color: GRAY, marginBottom: 4 }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: BG, borderRadius: 8, fontSize: 13, color: GRAY }}>
                     <span style={{ color: GRAY_LT }}>{s.icon}</span>
                     <span style={{ fontWeight: 700, color: DARK }}>{s.val}</span>
                   </div>
@@ -332,9 +375,9 @@ export default function ListingDetail() {
 
           {/* Équipements */}
           {listing.amenities?.length > 0 && (
-            <div style={{ background: '#fff', borderRadius: 14, padding: '22px 32px', border: `1px solid ${BORDER}` }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 14px' }}>Équipements</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: isMobile ? '16px' : '22px 32px', border: `1px solid ${BORDER}` }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 12px' }}>Équipements</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
                 {listing.amenities.map(a => (
                   <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: '#374151', padding: '9px 12px', border: `1px solid ${BORDER}`, borderRadius: 8, background: BG }}>
                     <IcoCheck /> {AMENITY_LABELS[a] || a}
@@ -346,7 +389,7 @@ export default function ListingDetail() {
 
           {/* Description */}
           {listing.description && (
-            <div style={{ background: '#fff', borderRadius: 14, padding: '22px 32px', border: `1px solid ${BORDER}` }}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: isMobile ? '16px' : '22px 32px', border: `1px solid ${BORDER}` }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 12px' }}>Description</h2>
               <p style={{ fontSize: 14, color: '#4B5563', lineHeight: 1.8, margin: 0, whiteSpace: 'pre-line' }}>
                 {showFullDesc || listing.description.length <= descCut
@@ -362,14 +405,14 @@ export default function ListingDetail() {
             </div>
           )}
 
-          {/* ✅ Informations — tableau compact propre */}
-          <div style={{ background: '#fff', borderRadius: 14, padding: '22px 32px', border: `1px solid ${BORDER}` }}>
+          {/* Informations */}
+          <div style={{ background: '#fff', borderRadius: 14, padding: isMobile ? '16px' : '22px 32px', border: `1px solid ${BORDER}` }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 14px' }}>Informations du bien</h2>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <tbody>
                 {infoRows.map((row, i) => (
                   <tr key={i} style={{ borderBottom: i < infoRows.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
-                    <td style={{ padding: '9px 0', color: GRAY, fontWeight: 500, width: '40%' }}>{row.label}</td>
+                    <td style={{ padding: '9px 0', color: GRAY, fontWeight: 500, width: '45%' }}>{row.label}</td>
                     <td style={{ padding: '9px 0', color: DARK, fontWeight: 700, textAlign: 'right' }}>{row.value}</td>
                   </tr>
                 ))}
@@ -377,9 +420,9 @@ export default function ListingDetail() {
             </table>
           </div>
 
-          {/* ✅ Carte Google Maps */}
+          {/* Carte */}
           <div style={{ background: '#fff', borderRadius: 14, overflow: 'hidden', border: `1px solid ${BORDER}` }}>
-            <div style={{ padding: '18px 32px 14px' }}>
+            <div style={{ padding: isMobile ? '14px 16px 12px' : '18px 32px 14px' }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 4px' }}>Localisation</h2>
               <p style={{ fontSize: 13, color: GRAY, margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
                 <IcoPin /> {location}
@@ -388,15 +431,15 @@ export default function ListingDetail() {
             <iframe
               src={mapUrl}
               width="100%"
-              height="320"
+              height={isMobile ? 220 : 320}
               style={{ border: 'none', display: 'block' }}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               title="Localisation du bien"
             />
-            <div style={{ padding: '10px 32px 14px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <div style={{ padding: isMobile ? '8px 16px 12px' : '10px 32px 14px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
               <a href={`https://maps.google.com/?q=${mapQuery}`} target="_blank" rel="noopener noreferrer"
-                style={{ fontSize: 12, color: BLUE, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                style={{ fontSize: 12, color: BLUE, fontWeight: 600, textDecoration: 'none' }}>
                 Ouvrir dans Google Maps →
               </a>
             </div>
@@ -404,11 +447,11 @@ export default function ListingDetail() {
 
           {/* Recommandations */}
           {similar.length > 0 && (
-            <div style={{ background: '#fff', borderRadius: 14, padding: '22px 32px', border: `1px solid ${BORDER}` }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 16px' }}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: isMobile ? '16px' : '22px 32px', border: `1px solid ${BORDER}` }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: DARK, margin: '0 0 14px' }}>
                 Biens similaires à {listing.wilaya}
               </h2>
-              <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 6 }}>
+              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 6 }}>
                 {similar.map(s => (
                   <RecoCard key={s.id} listing={s} onClick={() => { navigate(`/listing/${s.id}`); window.scrollTo(0, 0) }} />
                 ))}
@@ -417,74 +460,70 @@ export default function ListingDetail() {
           )}
         </div>
 
-        {/* Sidebar */}
-        <div style={{ width: 330, flexShrink: 0 }}>
-          <div style={{ background: '#fff', borderRadius: 14, border: `1px solid ${BORDER}`, boxShadow: '0 4px 24px rgba(0,0,0,0.07)', overflow: 'hidden', position: 'sticky', top: 20 }}>
-            <div style={{ padding: '20px 22px 16px', borderBottom: `1px solid ${BORDER}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: BLUE, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 17, flexShrink: 0 }}>D</div>
-                <div>
-                  <p style={{ fontWeight: 700, color: DARK, fontSize: 14, margin: '0 0 2px' }}>Vendeur Darni</p>
-                  <p style={{ fontSize: 11, color: GRAY_LT, margin: 0 }}>✓ Membre vérifié</p>
+        {/* ── Sidebar — desktop uniquement ── */}
+        {!isMobile && (
+          <div style={{ width: 330, flexShrink: 0 }}>
+            <div style={{ background: '#fff', borderRadius: 14, border: `1px solid ${BORDER}`, boxShadow: '0 4px 24px rgba(0,0,0,0.07)', overflow: 'hidden', position: 'sticky', top: 20 }}>
+              <div style={{ padding: '20px 22px 16px', borderBottom: `1px solid ${BORDER}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: BLUE, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 17, flexShrink: 0 }}>D</div>
+                  <div>
+                    <p style={{ fontWeight: 700, color: DARK, fontSize: 14, margin: '0 0 2px' }}>Vendeur Darni</p>
+                    <p style={{ fontSize: 11, color: GRAY_LT, margin: 0 }}>✓ Membre vérifié</p>
+                  </div>
+                </div>
+                <div style={{ background: BG, borderRadius: 10, padding: '12px 14px' }}>
+                  <p style={{ fontSize: 10, color: GRAY, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 }}>Prix demandé</p>
+                  <p style={{ fontSize: 20, fontWeight: 900, color: DARK, margin: 0, letterSpacing: '-0.02em' }}>
+                    {formatPrice(listing.price, listing.transaction)}
+                  </p>
                 </div>
               </div>
-              <div style={{ background: BG, borderRadius: 10, padding: '12px 14px' }}>
-                <p style={{ fontSize: 10, color: GRAY, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 }}>Prix demandé</p>
-                <p style={{ fontSize: 20, fontWeight: 900, color: DARK, margin: 0, letterSpacing: '-0.02em' }}>
-                  {formatPrice(listing.price, listing.transaction)}
-                </p>
+              <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: 9 }}>
+                <a href={waLink} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '13px 0', borderRadius: 10, background: WA_GREEN, color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+                  <IcoWA /> WhatsApp
+                </a>
+                {telLink && (
+                  <a href={telLink}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '11px 0', borderRadius: 10, background: BLUE, color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+                    <IcoPhone /> Appeler
+                  </a>
+                )}
+                <button onClick={() => setSaved(v => !v)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 0', borderRadius: 10, border: `1.5px solid ${saved ? '#FCA5A5' : BORDER}`, background: saved ? '#FEF2F2' : '#fff', color: saved ? '#EF4444' : '#374151', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                  <IcoHeart filled={saved} /> {saved ? 'Annonce sauvegardée' : "Sauvegarder l'annonce"}
+                </button>
+                <button onClick={share}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '9px 0', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: '#fff', color: '#374151', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                  <IcoShare /> Partager
+                </button>
+              </div>
+              <div style={{ padding: '0 22px 14px', textAlign: 'center' }}>
+                <p style={{ fontSize: 11, color: GRAY_LT, margin: 0 }}>Réf. #{refCode}</p>
               </div>
             </div>
-
-            <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: 9 }}>
-              <a href={waLink} target="_blank" rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '13px 0', borderRadius: 10, background: WA_GREEN, color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none', transition: 'opacity 0.15s' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.88'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}>
-                <IcoWA /> WhatsApp
-              </a>
-              {telLink && (
-                <a href={telLink}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '11px 0', borderRadius: 10, background: BLUE, color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none', transition: 'opacity 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.88'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}>
-                  <IcoPhone /> Appeler
-                </a>
-              )}
-              <button onClick={() => setSaved(v => !v)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 0', borderRadius: 10, border: `1.5px solid ${saved ? '#FCA5A5' : BORDER}`, background: saved ? '#FEF2F2' : '#fff', color: saved ? '#EF4444' : '#374151', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s' }}>
-                <IcoHeart filled={saved} /> {saved ? 'Annonce sauvegardée' : "Sauvegarder l'annonce"}
-              </button>
-              <button onClick={share}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '9px 0', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: '#fff', color: '#374151', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = BG}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
-                <IcoShare /> Partager
-              </button>
-            </div>
-            <div style={{ padding: '0 22px 14px', textAlign: 'center' }}>
-              <p style={{ fontSize: 11, color: GRAY_LT, margin: 0 }}>Réf. #{refCode}</p>
-            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Barre mobile uniquement */}
-      <div className="mobile-cta"
-        style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: `1px solid ${BORDER}`, padding: '10px 16px', gap: 10, zIndex: 50 }}>
-        {telLink && (
-          <a href={telLink}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '13px 0', borderRadius: 10, background: BLUE, color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
-            <IcoPhone /> Appeler
-          </a>
         )}
-        <a href={waLink} target="_blank" rel="noopener noreferrer"
-          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '13px 0', borderRadius: 10, background: WA_GREEN, color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
-          <IcoWA /> WhatsApp
-        </a>
       </div>
 
-      {/* Modal galerie */}
+      {/* ── Barre CTA fixe — mobile uniquement ── */}
+      {isMobile && (
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: `1px solid ${BORDER}`, padding: '10px 16px', display: 'flex', gap: 10, zIndex: 50, boxShadow: '0 -2px 12px rgba(0,0,0,0.08)' }}>
+          {telLink && (
+            <a href={telLink}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '13px 0', borderRadius: 10, background: BLUE, color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+              <IcoPhone /> Appeler
+            </a>
+          )}
+          <a href={waLink} target="_blank" rel="noopener noreferrer"
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '13px 0', borderRadius: 10, background: WA_GREEN, color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+            <IcoWA /> WhatsApp
+          </a>
+        </div>
+      )}
+
+      {/* ── Modal galerie ── */}
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.97)', zIndex: 200, display: 'flex', flexDirection: 'column', animation: 'fade 0.2s ease' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', flexShrink: 0 }}>
@@ -492,21 +531,21 @@ export default function ListingDetail() {
             <button onClick={() => setShowModal(false)}
               style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 38, height: 38, cursor: 'pointer', color: '#fff', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
           </div>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 70px', position: 'relative' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0 50px' : '0 70px', position: 'relative' }}>
             <img src={photos[activePhoto]} alt="" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', borderRadius: 6 }} />
             {activePhoto > 0 && (
               <button onClick={() => setActivePhoto(p => p - 1)}
-                style={{ position: 'absolute', left: 16, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 46, height: 46, cursor: 'pointer', color: '#fff', fontSize: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+                style={{ position: 'absolute', left: 10, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 42, height: 42, cursor: 'pointer', color: '#fff', fontSize: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
             )}
             {activePhoto < photos.length - 1 && (
               <button onClick={() => setActivePhoto(p => p + 1)}
-                style={{ position: 'absolute', right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 46, height: 46, cursor: 'pointer', color: '#fff', fontSize: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+                style={{ position: 'absolute', right: 10, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 42, height: 42, cursor: 'pointer', color: '#fff', fontSize: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, padding: '16px 24px', overflowX: 'auto', flexShrink: 0 }}>
             {photos.map((p, i) => (
               <img key={i} src={p} alt="" onClick={() => setActivePhoto(i)}
-                style={{ height: 60, width: 90, objectFit: 'cover', borderRadius: 6, cursor: 'pointer', flexShrink: 0, opacity: i === activePhoto ? 1 : 0.4, border: i === activePhoto ? '2px solid #fff' : '2px solid transparent', transition: 'all 0.15s' }} />
+                style={{ height: 56, width: 80, objectFit: 'cover', borderRadius: 6, cursor: 'pointer', flexShrink: 0, opacity: i === activePhoto ? 1 : 0.4, border: i === activePhoto ? '2px solid #fff' : '2px solid transparent', transition: 'all 0.15s' }} />
             ))}
           </div>
         </div>
