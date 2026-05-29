@@ -151,7 +151,7 @@ export function Home() {
         marginBottom: 40,
       }}>
         <img
-          src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1400&q=80"
+          src="/hero.png"
           alt="Alger"
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.65)' }}
         />
