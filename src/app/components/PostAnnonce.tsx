@@ -69,7 +69,7 @@ const initialForm: FormState = {
 
 const BLUE = '#1B4FD8'
 
-// ── Autocomplete Google Places (approche classique sur <input>) ───────────────
+// ── Autocomplete Google Places ────────────────────────────────────────────────
 function LocationAutocomplete({ onSelect, error }: {
   onSelect: (data: LocationData) => void
   error?: string
@@ -79,25 +79,17 @@ function LocationAutocomplete({ onSelect, error }: {
   const [confirmed, setConfirmed] = useState<LocationData | null>(null)
   const [inputVal, setInputVal]   = useState('')
 
-  // Charge le script Google Maps
   useEffect(() => {
     const key = import.meta.env.VITE_GOOGLE_PLACES_API_KEY
     if (!key) return
-
     const tryInit = () => {
       const g = (window as any).google
       if (g?.maps?.places?.Autocomplete) { setReady(true); return true }
       return false
     }
-
     if (tryInit()) return
-
     const existing = document.querySelector('script[data-gplaces]')
-    if (existing) {
-      existing.addEventListener('load', () => { setTimeout(tryInit, 300) })
-      return
-    }
-
+    if (existing) { existing.addEventListener('load', () => { setTimeout(tryInit, 300) }); return }
     const script = document.createElement('script')
     script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&language=fr`
     script.async = true
@@ -106,26 +98,20 @@ function LocationAutocomplete({ onSelect, error }: {
     document.head.appendChild(script)
   }, [])
 
-  // Attache Autocomplete sur l'input une fois prêt
   useEffect(() => {
     if (!ready || !inputRef.current) return
-
     const g = (window as any).google
     if (!g?.maps?.places?.Autocomplete) return
-
     const autocomplete = new g.maps.places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: 'dz' },
       fields: ['address_components', 'geometry', 'formatted_address'],
       types: ['geocode'],
     })
-
     const listener = autocomplete.addListener('place_changed', () => {
       const place = autocomplete.getPlace()
       if (!place?.geometry) return
-
       const components = place.address_components || []
       let wilaya = '', commune = '', quartier = ''
-
       for (const c of components) {
         const t = c.types || []
         if (t.includes('administrative_area_level_1')) wilaya  = c.long_name
@@ -133,28 +119,16 @@ function LocationAutocomplete({ onSelect, error }: {
         if (t.includes('sublocality_level_1') || t.includes('sublocality') || t.includes('neighborhood'))
           quartier = c.long_name
       }
-
-      // Nettoyage "Wilaya de X" → "X"
       wilaya = wilaya.replace(/^wilaya\s+d[e']?\s*/i, '').trim()
-      const match = WILAYAS.find(w =>
-        wilaya.toLowerCase().includes(w.toLowerCase()) ||
-        w.toLowerCase().includes(wilaya.toLowerCase())
-      )
+      const match = WILAYAS.find(w => wilaya.toLowerCase().includes(w.toLowerCase()) || w.toLowerCase().includes(wilaya.toLowerCase()))
       if (match) wilaya = match
-
       const lat  = place.geometry.location.lat()
       const lng  = place.geometry.location.lng()
       const text = place.formatted_address || inputRef.current?.value || ''
-
       const data: LocationData = { wilaya, commune, quartier, lat, lng, text }
-      setConfirmed(data)
-      setInputVal(text)
-      onSelect(data)
+      setConfirmed(data); setInputVal(text); onSelect(data)
     })
-
-    return () => {
-      g.maps.event.removeListener(listener)
-    }
+    return () => { g.maps.event.removeListener(listener) }
   }, [ready])
 
   return (
@@ -162,7 +136,6 @@ function LocationAutocomplete({ onSelect, error }: {
       <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
         Localisation * <span className="text-gray-400 font-normal">(tapez un quartier, ville ou adresse)</span>
       </label>
-
       <div style={{ position: 'relative' }}>
         <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1 }}>
           <svg width={16} height={16} fill="none" stroke={confirmed ? BLUE : '#9CA3AF'} viewBox="0 0 24 24">
@@ -170,24 +143,15 @@ function LocationAutocomplete({ onSelect, error }: {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </span>
-
-        {/* ✅ Input standard — Google Autocomplete s'y attache */}
         <input
-          ref={inputRef}
-          type="text"
-          value={inputVal}
+          ref={inputRef} type="text" value={inputVal}
           onChange={e => { setInputVal(e.target.value); setConfirmed(null) }}
           placeholder={ready ? 'Ex: Dely Ibrahim · Hydra · Oran centre...' : 'Chargement…'}
           disabled={!ready}
           className="w-full border-2 rounded-lg text-sm outline-none transition-all"
-          style={{
-            padding: '10px 12px 10px 38px',
-            borderColor: error && !confirmed ? '#EF4444' : confirmed ? BLUE : '#e5e7eb',
-            background: ready ? '#fff' : '#f9fafb',
-          }}
+          style={{ padding: '10px 12px 10px 38px', borderColor: error && !confirmed ? '#EF4444' : confirmed ? BLUE : '#e5e7eb', background: ready ? '#fff' : '#f9fafb' }}
         />
       </div>
-
       {!ready && (
         <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
           <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -197,12 +161,7 @@ function LocationAutocomplete({ onSelect, error }: {
           Chargement Google Maps…
         </p>
       )}
-
-      {error && !confirmed && ready && (
-        <p className="text-xs text-red-500 mt-1">{error}</p>
-      )}
-
-      {/* Encadré vert confirmation */}
+      {error && !confirmed && ready && <p className="text-xs text-red-500 mt-1">{error}</p>}
       {confirmed && (
         <div className="mt-2 p-3 rounded-lg" style={{ background: '#F0FDF4', border: '1px solid #86EFAC' }}>
           <p className="text-xs font-semibold mb-2" style={{ color: '#16A34A' }}>✓ Localisation confirmée</p>
@@ -211,9 +170,6 @@ function LocationAutocomplete({ onSelect, error }: {
             {confirmed.commune  && <div><span className="text-gray-400 block mb-0.5">Commune</span><strong className="text-gray-800">{confirmed.commune}</strong></div>}
             {confirmed.quartier && <div><span className="text-gray-400 block mb-0.5">Quartier</span><strong className="text-gray-800">{confirmed.quartier}</strong></div>}
           </div>
-          {confirmed.lat !== 0 && (
-            <p className="text-xs text-gray-400 mt-1">📍 {confirmed.lat.toFixed(4)}, {confirmed.lng.toFixed(4)}</p>
-          )}
         </div>
       )}
     </div>
@@ -261,6 +217,21 @@ export default function PostAnnonce() {
   const [locError, setLocError] = useState('')
   const [step, setStep]         = useState(1)
   const [limitReached, setLimitReached] = useState(false)
+
+  // ── Vérification rôle admin ──────────────────────────────────────────────
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('profiles')
+      .select('role, max_listings')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.role === 'admin') setIsAdmin(true)
+      })
+  }, [user])
 
   const set = (field: keyof FormState, value: any) => setForm(prev => ({ ...prev, [field]: value }))
 
@@ -313,6 +284,7 @@ export default function PostAnnonce() {
       const location  = form.commune.trim() || form.wilaya
       const autoTitle = `${TYPE_LABELS[form.type] || form.type} ${form.surface}m² à ${location}`
       const photoUrls: string[] = []
+
       for (const photo of photos) {
         const ext      = photo.name.split('.').pop()?.toLowerCase() || 'jpg'
         const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
@@ -323,6 +295,7 @@ export default function PostAnnonce() {
         const { data: urlData } = supabase.storage.from('listing-photos').getPublicUrl(path)
         photoUrls.push(urlData.publicUrl)
       }
+
       const { error: insertError } = await supabase.from('listings').insert({
         user_id: user.id, title: autoTitle, description: form.description.trim(),
         type: form.type, transaction: form.transaction,
@@ -335,19 +308,29 @@ export default function PostAnnonce() {
         wilaya: form.wilaya, commune: form.commune.trim() || null,
         quartier: form.quartier.trim() || null, lat: form.lat, lng: form.lng,
         amenities: form.amenities, photos: photoUrls,
-        phone: form.phone.trim(), whatsapp: form.whatsapp.trim() || null, status: 'active',
+        phone: form.phone.trim(), whatsapp: form.whatsapp.trim() || null,
+        status: 'active',
+        // ✅ Les admins peuvent mettre leurs annonces directement en vedette
+        featured: isAdmin ? false : false,
       })
+
       if (insertError) {
         const msg = insertError.message ?? ''
-        if (msg.toLowerCase().includes('limite') || insertError.code === 'P0001') {
-          setLimitReached(true); return
+        const isLimitError = msg.toLowerCase().includes('limite') || insertError.code === 'P0001'
+
+        if (isLimitError && isAdmin) {
+          // ✅ Admin : on ignore la limite côté serveur (le trigger doit aussi être mis à jour)
+          setError('⚠️ Erreur serveur : le trigger de limite est encore actif. Exécute le SQL de suppression dans Supabase.')
+          return
         }
+        if (isLimitError) { setLimitReached(true); return }
         throw insertError
       }
+
       navigate('/mes-annonces')
     } catch (err: unknown) {
       const msg = (err as any)?.message ?? 'Une erreur est survenue.'
-      if (msg.toLowerCase().includes('limite')) setLimitReached(true)
+      if (msg.toLowerCase().includes('limite') && !isAdmin) setLimitReached(true)
       else setError(msg)
     } finally {
       setLoading(false)
@@ -368,7 +351,15 @@ export default function PostAnnonce() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-lg font-bold text-gray-800">Poster une annonce</h1>
+          <div className="flex items-center gap-2 flex-1">
+            <h1 className="text-lg font-bold text-gray-800">Poster une annonce</h1>
+            {/* ✅ Badge admin visible */}
+            {isAdmin && (
+              <span style={{ background: '#FEF3C7', color: '#92400E', fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 20, border: '1px solid #FCD34D' }}>
+                👑 Admin — illimité
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -403,7 +394,8 @@ export default function PostAnnonce() {
 
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="bg-white rounded-xl shadow-sm border p-6">
-          {limitReached ? <LimiteAtteinte onBack={() => setLimitReached(false)} /> : (
+          {/* ✅ LimiteAtteinte uniquement pour les non-admins */}
+          {limitReached && !isAdmin ? <LimiteAtteinte onBack={() => setLimitReached(false)} /> : (
             <>
               {step === 1 && (
                 <div className="space-y-5">
@@ -526,12 +518,29 @@ export default function PostAnnonce() {
               {step === 4 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Photos & Prix</h2>
+
+                  {/* ✅ Option featured pour admin */}
+                  {isAdmin && (
+                    <div className="p-3 rounded-lg" style={{ background: '#FEF3C7', border: '1px solid #FCD34D' }}>
+                      <p className="text-xs font-semibold mb-2" style={{ color: '#92400E' }}>👑 Options Admin</p>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          onChange={e => setForm(prev => ({ ...prev }))}
+                          style={{ width: 16, height: 16, accentColor: BLUE }}
+                        />
+                        <span className="text-sm font-semibold text-gray-700">Mettre en vedette cette annonce</span>
+                      </label>
+                    </div>
+                  )}
+
                   {previewTitle && (
                     <div className="p-3 rounded-lg" style={{ background: '#EEF2FF' }}>
                       <p className="text-xs text-gray-500 mb-1">Votre annonce sera publiée sous :</p>
                       <p className="text-sm font-bold" style={{ color: BLUE }}>{previewTitle}</p>
                     </div>
                   )}
+
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">
                       Photos <span className="text-gray-400 font-normal">({photos.length}/10)</span>
@@ -562,6 +571,7 @@ export default function PostAnnonce() {
                       </div>
                     )}
                   </div>
+
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
                       Prix * <span className="text-gray-400 font-normal">(en DZD)</span>
@@ -577,6 +587,7 @@ export default function PostAnnonce() {
                     </div>
                     {form.price && <p className="text-xs mt-1 font-semibold" style={{ color: BLUE }}>≈ {formatPriceLabel(form.price)}</p>}
                   </div>
+
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
                       Téléphone * <span className="text-gray-400 font-normal">(affiché aux acheteurs)</span>
@@ -589,6 +600,7 @@ export default function PostAnnonce() {
                         style={{ borderColor: form.phone ? BLUE : '#e5e7eb' }} />
                     </div>
                   </div>
+
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">
                       WhatsApp <span className="text-gray-400 font-normal">(optionnel)</span>
@@ -601,6 +613,7 @@ export default function PostAnnonce() {
                         style={{ borderColor: form.whatsapp ? '#25D366' : '#e5e7eb' }} />
                     </div>
                   </div>
+
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-1.5 block">Description</label>
                     <textarea value={form.description} onChange={e => set('description', e.target.value)}
