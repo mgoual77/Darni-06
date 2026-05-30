@@ -89,9 +89,12 @@ const BADGE_COLORS: Record<string, string> = {
 
 function firstPhoto(listing: any): string {
   const photos = listing.photos;
-  if (!photos) return '/placeholder.jpg';
-  if (Array.isArray(photos) && photos.length > 0) return photos[0]?.url ?? '/placeholder.jpg';
-  return '/placeholder.jpg';
+  if (!photos || !Array.isArray(photos) || photos.length === 0) return '/placeholder.jpg';
+  const p = photos[0];
+  // photos est un text[] dans Supabase — strings directement
+  if (typeof p === 'string') return p;
+  // fallback si objet {url: "..."}
+  return p?.url ?? '/placeholder.jpg';
 }
 
 function withImage(listing: any) {
