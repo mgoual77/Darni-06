@@ -133,7 +133,7 @@ export function Home() {
     fetchListings();
   }, []);
 
-  const featuredListings = listings.filter(l => l.featured || l.rating >= 4.8).slice(0, 5).map(withImage);
+  const featuredListings = listings.filter(l => l.is_featured === true).slice(0, 5).map(withImage);
   const filteredByWilaya = listings.filter(l => l.wilaya === activeWilaya).map(withImage);
 
   const px = isMobile ? '16px' : '24px';

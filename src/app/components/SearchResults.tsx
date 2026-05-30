@@ -280,7 +280,7 @@ export function SearchResults() {
                     </span>
                   </div>
 
-                  {listing.featured && (
+                  {listing.is_featured && (
                     <span style={{ position: 'absolute', top: 10, right: 10, background: '#eec64f', color: '#7a5800', fontSize: '1rem', fontWeight: 800, padding: '3px 8px', borderRadius: 20 }}>⭐ Vedette</span>
                   )}
 
