@@ -312,7 +312,7 @@ export function Home() {
                         ))}
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-                        {[{ label: '< 5M DA', min: '', max: '5000000' }, { label: '5–10M DA', min: '5000000', max: '10000000' }, { label: '10–20M DA', min: '10000000', max: '20000000' }, { label: '> 20M DA', min: '20000000', max: '' }].map(s => (
+                        label: '< 1M DA', min: '', max: '1000000' }, { label: '1–3M DA', min: '1000000', max: '3000000' }, { label: '3–5M DA', min: '3000000', max: '5000000' }, { label: '5–10M DA', min: '5000000', max: '10000000' }, { label: '10–20M DA', min: '10000000', max: '20000000' }, { label: '> 20M DA', min: '20000000', max: '' }].map(s => (
                           <button key={s.label} onClick={() => { setPriceMin(s.min); setPriceMax(s.max); }}
                             style={{ padding: '4px 10px', borderRadius: 20, border: '1.5px solid', borderColor: priceMin === s.min && priceMax === s.max ? '#1B4FD8' : '#E5E7EB', background: priceMin === s.min && priceMax === s.max ? '#EEF2FF' : '#fff', color: priceMin === s.min && priceMax === s.max ? '#1B4FD8' : '#374151', fontSize: '1.1rem', fontWeight: 500, cursor: 'pointer' }}>
                             {s.label}
