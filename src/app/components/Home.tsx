@@ -565,7 +565,7 @@ export function Home() {
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           onError={e => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg'; }} />
                         <span style={{ position: 'absolute', top: 8, left: 8, background: BADGE_COLORS[listing.type] ?? '#1B4FD8', color: '#fff', fontSize: '1rem', fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>
-                          {listing.type}
+                          {listing.type?.charAt(0).toUpperCase() + listing.type?.slice(1)}
                         </span>
                       </div>
                       <div style={{ padding: isMobile ? '10px 12px' : '14px 16px' }}>

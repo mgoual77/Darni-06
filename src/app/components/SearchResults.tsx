@@ -107,11 +107,13 @@ export function SearchResults() {
   const headerHeight = isMobile ? 145 : 175;
 
   // ── Badge type ────────────────────────────────────────────────────────────
+  const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+
   function getBadgeLabel(l: any) {
     if (l.transaction === 'vente') return 'Vente';
     if (l.transaction === 'location') return 'Location';
     if (l.type === 'terrain') return 'Terrain';
-    return l.transaction ?? l.type ?? 'Vente';
+    return capitalize(l.transaction ?? l.type ?? 'vente');
   }
 
   function getBadgeColor(l: any) {
@@ -280,7 +282,7 @@ export function SearchResults() {
                     </span>
                   </div>
 
-                  {listing.is_featured && (
+                  {listing.featured && (
                     <span style={{ position: 'absolute', top: 10, right: 10, background: '#eec64f', color: '#7a5800', fontSize: '1rem', fontWeight: 800, padding: '3px 8px', borderRadius: 20 }}>⭐ Vedette</span>
                   )}
 
