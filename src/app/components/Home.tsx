@@ -137,7 +137,10 @@ export function Home() {
   }, []);
 
   const featuredListings = listings.filter(l => l.is_featured === true).slice(0, 5).map(withImage);
-  const filteredByWilaya = listings.filter(l => l.wilaya === activeWilaya).map(withImage);
+  const filteredByWilaya = listings
+  .filter(l => l.wilaya?.toLowerCase().includes(activeWilaya.toLowerCase()) || 
+               activeWilaya.toLowerCase().includes(l.wilaya?.toLowerCase() ?? ''))
+  .map(withImage);
 
   const px = isMobile ? '16px' : '24px';
 
