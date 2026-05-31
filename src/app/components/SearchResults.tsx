@@ -36,7 +36,9 @@ const BADGE_COLORS: Record<string, string> = {
 };
 
 const PRICE_SUGGESTIONS = [
-  { label: '< 5M DA',    min: 0,          max: 5_000_000   },
+  { label: '< 1M DA',    min: 0,          max: 1_000_000   },
+  { label: '1–3M DA',    min: 1_000_000,  max: 3_000_000   },
+  { label: '3–5M DA',    min: 3_000_000,  max: 5_000_000   },
   { label: '5–10M DA',   min: 5_000_000,  max: 10_000_000  },
   { label: '10–20M DA',  min: 10_000_000, max: 20_000_000  },
   { label: '> 20M DA',   min: 20_000_000, max: 0           },
