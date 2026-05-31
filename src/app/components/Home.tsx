@@ -207,7 +207,7 @@ export function Home() {
                 </div>
 
                 {/* Rechercher */}
-                <button onClick={() => navigate('/search')}
+                <button onClick={() => navigate(`/search${searchText.trim() ? `?q=${encodeURIComponent(searchText)}` : ''}`)}
                   style={{ width: '100%', background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 0', fontSize: '1.5rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 12px rgba(27,79,216,0.3)' }}>
                   <Search style={{ width: 17, height: 17 }} /> Rechercher
                 </button>
@@ -596,7 +596,7 @@ export function Home() {
 
           <div style={{ textAlign: 'center', marginTop: 24 }}>
             <button
-              onClick={() => navigate('/search')}
+              onClick={() => navigate(`/search${searchText.trim() ? `?q=${encodeURIComponent(searchText)}` : ''}`)}
               style={{ background: 'none', border: '1.5px solid #1B4FD8', color: '#1B4FD8', borderRadius: 10, padding: '12px 32px', fontSize: '1.4rem', fontWeight: 700, cursor: 'pointer' }}>
               Voir tous les biens à {activeWilaya} →
             </button>
