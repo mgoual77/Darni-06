@@ -4,7 +4,6 @@ import { PropertyCard } from './PropertyCard';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
-// ── Hook mobile ──────────────────────────────────────────────────────────────
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -16,7 +15,6 @@ function useIsMobile() {
   return isMobile;
 }
 
-// ── Constantes ───────────────────────────────────────────────────────────────
 const HERO_TABS = [
   { label: 'Propriétés',     badge: null   },
   { label: 'Nouveaux biens', badge: 'NEW'  },
@@ -25,6 +23,16 @@ const HERO_TABS = [
 ];
 
 const WILAYAS_TABS = ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Sétif'];
+
+// ✅ Tranches de prix corrigées
+const PRICE_RANGES = [
+  { label: '< 1M DA',   min: '',         max: '1000000'  },
+  { label: '1–3M DA',   min: '1000000',  max: '3000000'  },
+  { label: '3–5M DA',   min: '3000000',  max: '5000000'  },
+  { label: '5–10M DA',  min: '5000000',  max: '10000000' },
+  { label: '10–20M DA', min: '10000000', max: '20000000' },
+  { label: '> 20M DA',  min: '20000000', max: ''         },
+];
 
 const EstimationIllustration = () => (
   <svg viewBox="0 0 200 120" style={{ position: 'absolute', bottom: 0, right: 0, width: 140, opacity: 0.9 }}>
@@ -87,13 +95,19 @@ const BADGE_COLORS: Record<string, string> = {
   Vente: '#1B4FD8', Location: '#16A34A', Colocation: '#EA580C', Terrain: '#7C3AED',
 };
 
+// ✅ Prix formaté intelligemment
+function smartPrice(price: number): string {
+  if (!price) return '— DA';
+  if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1).replace('.0', '')} Mrd DA`;
+  if (price >= 1_000_000)     return `${(price / 1_000_000).toFixed(1).replace('.0', '')} M DA`;
+  return price.toLocaleString('fr-DZ') + ' DA';
+}
+
 function firstPhoto(listing: any): string {
   const photos = listing.photos;
   if (!photos || !Array.isArray(photos) || photos.length === 0) return '/placeholder.jpg';
   const p = photos[0];
-  // photos est un text[] dans Supabase — strings directement
   if (typeof p === 'string') return p;
-  // fallback si objet {url: "..."}
   return p?.url ?? '/placeholder.jpg';
 }
 
@@ -101,7 +115,6 @@ function withImage(listing: any) {
   return { ...listing, image: firstPhoto(listing) };
 }
 
-// ── Composant ────────────────────────────────────────────────────────────────
 export function Home() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -138,9 +151,9 @@ export function Home() {
 
   const featuredListings = listings.filter(l => l.is_featured === true).slice(0, 5).map(withImage);
   const filteredByWilaya = listings
-  .filter(l => l.wilaya?.toLowerCase().includes(activeWilaya.toLowerCase()) || 
-               activeWilaya.toLowerCase().includes(l.wilaya?.toLowerCase() ?? ''))
-  .map(withImage);
+    .filter(l => l.wilaya?.toLowerCase().includes(activeWilaya.toLowerCase()) ||
+                 activeWilaya.toLowerCase().includes(l.wilaya?.toLowerCase() ?? ''))
+    .map(withImage);
 
   const px = isMobile ? '16px' : '24px';
 
@@ -149,15 +162,9 @@ export function Home() {
 
       {/* ── HERO ── */}
       {isMobile ? (
-        /* ── MOBILE : image visible en haut, search box en dessous ── */
         <div style={{ marginBottom: 24 }}>
-          {/* Image */}
           <div style={{ position: 'relative', height: 240, overflow: 'hidden' }}>
-            <img
-              src="/hero.png"
-              alt="Darni"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center' }}
-            />
+            <img src="/hero.png" alt="Darni" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)' }} />
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 20px' }}>
               <h1 style={{ color: '#fff', fontSize: '2.8rem', fontWeight: 900, textAlign: 'center', textShadow: '0 2px 12px rgba(0,0,0,0.6)', lineHeight: 1.15, marginBottom: 6 }}>
@@ -169,10 +176,8 @@ export function Home() {
             </div>
           </div>
 
-          {/* Search box — chevauchement -20px sur l'image */}
           <div style={{ margin: '0 12px', marginTop: -20, position: 'relative', zIndex: 10 }}>
             <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-              {/* Onglets */}
               <div style={{ display: 'flex', padding: '0 6px', borderBottom: '1px solid #F3F4F6', overflowX: 'auto' }}>
                 {HERO_TABS.map(({ label, badge }) => {
                   const active = heroTab === label;
@@ -180,14 +185,13 @@ export function Home() {
                     <button key={label} onClick={() => setHeroTab(label)}
                       style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '10px 10px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem', fontWeight: active ? 700 : 500, color: active ? '#1B4FD8' : '#6B7280', borderBottom: active ? '2px solid #1B4FD8' : '2px solid transparent', marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {label}
-                      {badge && <span style={{ background: '#EF4444', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '1px 5px', borderRadius: 4 }}>{badge}</span>}
+                      {/* ✅ Badge NEW plus petit */}
+                      {badge && <span style={{ background: '#EF4444', color: '#fff', fontSize: '0.7rem', fontWeight: 800, padding: '1px 4px', borderRadius: 3 }}>{badge}</span>}
                     </button>
                   );
                 })}
               </div>
-
               <div style={{ padding: '12px 12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {/* Toggle Acheter / Louer */}
                 <div style={{ display: 'flex', gap: 4, background: '#F3F4F6', borderRadius: 10, padding: 3 }}>
                   {(['Vente', 'Location'] as const).map(t => (
                     <button key={t} onClick={() => setSearchType(t)}
@@ -196,8 +200,6 @@ export function Home() {
                     </button>
                   ))}
                 </div>
-
-                {/* Input */}
                 <div style={{ position: 'relative' }}>
                   <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9CA3AF' }} />
                   <input type="text" placeholder="Ville, quartier, ou wilaya..." value={searchText} onChange={e => setSearchText(e.target.value)}
@@ -205,19 +207,12 @@ export function Home() {
                     onFocus={e => (e.target as HTMLElement).style.borderColor = '#1B4FD8'}
                     onBlur={e  => (e.target as HTMLElement).style.borderColor = '#E5E7EB'} />
                 </div>
-
-                {/* Rechercher */}
                 <button onClick={() => navigate(`/search${searchText.trim() ? `?q=${encodeURIComponent(searchText)}` : ''}`)}
                   style={{ width: '100%', background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 0', fontSize: '1.5rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 12px rgba(27,79,216,0.3)' }}>
                   <Search style={{ width: 17, height: 17 }} /> Rechercher
                 </button>
-
-                {/* Filtres Type + Chambres */}
                 <div style={{ display: 'flex', gap: 8 }}>
-                  {[
-                    { label: 'Type',     options: ['Appartement', 'Maison', 'Villa', 'Terrain'] },
-                    { label: 'Chambres', options: ['Studio', '1', '2', '3', '4+'] },
-                  ].map(f => (
+                  {[{ label: 'Type', options: ['Appartement', 'Maison', 'Villa', 'Terrain'] }, { label: 'Chambres', options: ['Studio', '1', '2', '3', '4+'] }].map(f => (
                     <div key={f.label} style={{ position: 'relative', flex: 1 }}>
                       <select style={{ width: '100%', padding: '10px 28px 10px 12px', background: '#fff', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: '1.3rem', color: '#374151', appearance: 'none', outline: 'none' }}>
                         <option>{f.label}</option>
@@ -232,19 +227,19 @@ export function Home() {
           </div>
         </div>
       ) : (
-        /* ── DESKTOP : image + overlay + search box superposée ── */
-        <div style={{ position: 'relative', overflow: 'hidden', height: 560, borderRadius: '0 0 32px 32px', marginBottom: 40 }}>
+        /* ── DESKTOP : hero full-width, pas de coins arrondis ── */
+        <div style={{ position: 'relative', overflow: 'hidden', height: 560, marginBottom: 40 }}>
           <img src="/hero.png" alt="Darni"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.65)' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(27,79,216,0.15) 0%, rgba(0,0,0,0.1) 100%)' }} />
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.5)' }} />
+          {/* ✅ Overlay plus sombre */}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.4) 100%)' }} />
           <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '0 20px', maxWidth: 680, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-            <h1 style={{ color: '#fff', fontSize: '4.4rem', fontWeight: 900, letterSpacing: '-0.02em', textAlign: 'center', marginBottom: 8, textShadow: '0 2px 16px rgba(0,0,0,0.45)', lineHeight: 1.1 }}>
+            <h1 style={{ color: '#fff', fontSize: '4.4rem', fontWeight: 900, letterSpacing: '-0.02em', textAlign: 'center', marginBottom: 8, textShadow: '0 2px 16px rgba(0,0,0,0.5)', lineHeight: 1.1 }}>
               Trouvez votre futur chez-vous.
             </h1>
-            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1.6rem', fontWeight: 400, textAlign: 'center', marginBottom: 28, textShadow: '0 1px 8px rgba(0,0,0,0.35)' }}>
+            <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.6rem', fontWeight: 400, textAlign: 'center', marginBottom: 28, textShadow: '0 1px 8px rgba(0,0,0,0.4)' }}>
               L'immobilier en Algérie, en toute sérénité.
             </p>
-            {/* Search box desktop */}
             <div style={{ background: '#fff', borderRadius: 16, padding: '0 0 6px', width: '100%', maxWidth: 660, boxShadow: '0 16px 60px rgba(0,0,0,0.35)' }}>
               <div style={{ display: 'flex', gap: 0, padding: '0 6px', borderBottom: '1px solid #F3F4F6', overflowX: 'auto' }}>
                 {HERO_TABS.map(({ label, badge }) => {
@@ -253,7 +248,8 @@ export function Home() {
                     <button key={label} onClick={() => setHeroTab(label)}
                       style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '10px 12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.3rem', fontWeight: active ? 700 : 500, color: active ? '#1B4FD8' : '#6B7280', borderBottom: active ? '2px solid #1B4FD8' : '2px solid transparent', marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {label}
-                      {badge && <span style={{ background: '#EF4444', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '1px 5px', borderRadius: 4 }}>{badge}</span>}
+                      {/* ✅ Badge NEW plus petit */}
+                      {badge && <span style={{ background: '#EF4444', color: '#fff', fontSize: '0.7rem', fontWeight: 800, padding: '1px 4px', borderRadius: 3 }}>{badge}</span>}
                     </button>
                   );
                 })}
@@ -274,16 +270,13 @@ export function Home() {
                     onFocus={e => (e.target as HTMLElement).style.borderColor = '#1B4FD8'}
                     onBlur={e  => (e.target as HTMLElement).style.borderColor = '#E5E7EB'} />
                 </div>
-                <button onClick={() => navigate('/search')}
+                <button onClick={() => navigate(`/search${searchText.trim() ? `?q=${encodeURIComponent(searchText)}` : ''}`)}
                   style={{ background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: '1.4rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 4px 12px rgba(27,79,216,0.3)' }}>
                   <Search style={{ width: 16, height: 16 }} /> Rechercher
                 </button>
               </div>
               <div style={{ padding: '8px 10px 10px', display: 'flex', gap: 8 }}>
-                {[
-                  { label: 'Type',     options: ['Appartement', 'Maison', 'Villa', 'Terrain'] },
-                  { label: 'Chambres', options: ['Studio', '1', '2', '3', '4+'] },
-                ].map(f => (
+                {[{ label: 'Type', options: ['Appartement', 'Maison', 'Villa', 'Terrain'] }, { label: 'Chambres', options: ['Studio', '1', '2', '3', '4+'] }].map(f => (
                   <div key={f.label} style={{ position: 'relative', flex: 1 }}>
                     <select style={{ width: '100%', padding: '10px 32px 10px 14px', background: '#fff', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: '1.3rem', color: '#374151', appearance: 'none', outline: 'none', cursor: 'pointer', fontWeight: 500 }}>
                       <option>{f.label}</option>
@@ -292,6 +285,7 @@ export function Home() {
                     <ChevronDown style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#9CA3AF', pointerEvents: 'none' }} />
                   </div>
                 ))}
+                {/* Prix dropdown */}
                 <div style={{ position: 'relative', flex: 1 }}>
                   <button onClick={() => setShowPriceDropdown(!showPriceDropdown)}
                     style={{ width: '100%', padding: '7px 12px', background: showPriceDropdown ? '#EEF2FF' : '#fff', border: `1.5px solid ${showPriceDropdown ? '#1B4FD8' : '#E5E7EB'}`, borderRadius: 8, fontSize: '1.2rem', color: priceMin || priceMax ? '#1B4FD8' : '#374151', fontWeight: priceMin || priceMax ? 700 : 400, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
@@ -299,7 +293,7 @@ export function Home() {
                     <ChevronDown style={{ width: 14, height: 14, color: '#9CA3AF', transform: showPriceDropdown ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
                   </button>
                   {showPriceDropdown && (
-                    <div style={{ position: 'absolute', top: 40, left: 0, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 100, padding: 16, minWidth: 280 }}>
+                    <div style={{ position: 'absolute', top: 40, left: 0, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 100, padding: 16, minWidth: 300 }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
                         {[{ label: 'Minimum', val: priceMin, set: setPriceMin, placeholder: '0' }, { label: 'Maximum', val: priceMax, set: setPriceMax, placeholder: 'Illimité' }].map(({ label, val, set, placeholder }) => (
                           <div key={label}>
@@ -311,8 +305,9 @@ export function Home() {
                           </div>
                         ))}
                       </div>
+                      {/* ✅ Tranches corrigées */}
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-                        label: '< 1M DA', min: '', max: '1000000' }, { label: '1–3M DA', min: '1000000', max: '3000000' }, { label: '3–5M DA', min: '3000000', max: '5000000' }, { label: '5–10M DA', min: '5000000', max: '10000000' }, { label: '10–20M DA', min: '10000000', max: '20000000' }, { label: '> 20M DA', min: '20000000', max: '' }].map(s => (
+                        {PRICE_RANGES.map(s => (
                           <button key={s.label} onClick={() => { setPriceMin(s.min); setPriceMax(s.max); }}
                             style={{ padding: '4px 10px', borderRadius: 20, border: '1.5px solid', borderColor: priceMin === s.min && priceMax === s.max ? '#1B4FD8' : '#E5E7EB', background: priceMin === s.min && priceMax === s.max ? '#EEF2FF' : '#fff', color: priceMin === s.min && priceMax === s.max ? '#1B4FD8' : '#374151', fontSize: '1.1rem', fontWeight: 500, cursor: 'pointer' }}>
                             {s.label}
@@ -337,22 +332,9 @@ export function Home() {
 
         {/* 1. Feature cards */}
         <section>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
-            gap: isMobile ? 14 : 20,
-          }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 14 : 20 }}>
             {FEATURE_CARDS.map(({ title, description, bg, illustration }) => (
-              <div key={title} style={{
-                position: 'relative',
-                background: bg,
-                borderRadius: 16,
-                padding: '24px 24px 0',
-                overflow: 'hidden',
-                cursor: 'pointer',
-                minHeight: isMobile ? 130 : 160,
-                transition: 'transform 0.2s, box-shadow 0.2s',
-              }}>
+              <div key={title} style={{ position: 'relative', background: bg, borderRadius: 16, padding: '24px 24px 0', overflow: 'hidden', cursor: 'pointer', minHeight: isMobile ? 130 : 160 }}>
                 <h3 style={{ fontSize: isMobile ? '1.6rem' : '1.8rem', fontWeight: 700, color: '#111827', marginBottom: 6, position: 'relative', zIndex: 1 }}>{title}</h3>
                 <p style={{ fontSize: '1.3rem', color: '#4B5563', maxWidth: isMobile ? '65%' : 160, lineHeight: 1.5, position: 'relative', zIndex: 1 }}>
                   {description} <span style={{ color: '#1B4FD8' }}>›</span>
@@ -381,12 +363,9 @@ export function Home() {
               </div>
             )}
           </div>
-
           <div ref={carouselRef} className="scrollbar-hide" style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8 }}>
             {loading
-              ? [...Array(3)].map((_, i) => (
-                  <div key={i} style={{ minWidth: 280, height: 320, background: '#f3f4f6', borderRadius: 16, flexShrink: 0 }} />
-                ))
+              ? [...Array(3)].map((_, i) => <div key={i} style={{ minWidth: 280, height: 320, background: '#f3f4f6', borderRadius: 16, flexShrink: 0 }} />)
               : featuredListings.length > 0
                 ? featuredListings.map(l => <PropertyCard key={l.id} {...l} variant="featured" />)
                 : <p style={{ color: '#9CA3AF', fontSize: '1.4rem' }}>Aucun bien en vedette pour le moment.</p>
@@ -395,79 +374,38 @@ export function Home() {
         </section>
 
         {/* 3. Banner CTA vendeur */}
-        <div style={{
-          position: 'relative',
-          borderRadius: 20,
-          overflow: 'hidden',
-          background: 'linear-gradient(135deg, #00513F 0%, #00705A 100%)',
-          padding: isMobile ? '28px 20px' : '32px 40px',
-        }}>
+        <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', background: 'linear-gradient(135deg, #00513F 0%, #00705A 100%)', padding: isMobile ? '28px 20px' : '32px 40px' }}>
           <div style={{ position: 'absolute', left: 24, top: 0, bottom: 0, width: 160, opacity: 0.15, pointerEvents: 'none' }}>
             <svg viewBox="0 0 200 200" style={{ height: '100%' }}>
-              <rect x="10"  y="50" width="22" height="120" fill="white" rx="4" />
-              <rect x="44"  y="25" width="22" height="145" fill="white" rx="4" />
-              <rect x="78"  y="55" width="22" height="115" fill="white" rx="4" />
+              <rect x="10" y="50" width="22" height="120" fill="white" rx="4" />
+              <rect x="44" y="25" width="22" height="145" fill="white" rx="4" />
+              <rect x="78" y="55" width="22" height="115" fill="white" rx="4" />
               <rect x="112" y="35" width="22" height="135" fill="white" rx="4" />
               <rect x="146" y="60" width="22" height="110" fill="white" rx="4" />
             </svg>
           </div>
-          <div style={{
-            position: 'relative',
-            display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
-            alignItems: isMobile ? 'flex-start' : 'center',
-            justifyContent: 'space-between',
-            gap: isMobile ? 20 : 24,
-          }}>
+          <div style={{ position: 'relative', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: isMobile ? 20 : 24 }}>
             <div>
-              <span style={{ display: 'inline-block', background: '#EF4444', color: '#fff', fontSize: '1.1rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, marginBottom: 10, letterSpacing: '0.05em' }}>NOUVEAU</span>
+              {/* ✅ Badge NOUVEAU plus petit */}
+              <span style={{ display: 'inline-block', background: '#EF4444', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '2px 7px', borderRadius: 4, marginBottom: 10, letterSpacing: '0.05em' }}>NOUVEAU</span>
               <h3 style={{ color: '#fff', fontSize: isMobile ? '2rem' : '2.6rem', fontWeight: 700, marginBottom: 6 }}>Vendez ou louez avec confiance</h3>
               <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1.5rem' }}>Des milliers d'acheteurs vérifient Darni chaque jour</p>
             </div>
-            <button
-              onClick={() => navigate('/publish')}
-              style={{
-                flexShrink: 0,
-                background: '#fff',
-                color: '#00513F',
-                border: 'none',
-                borderRadius: 12,
-                padding: '14px 28px',
-                fontSize: '1.5rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                alignSelf: isMobile ? 'stretch' : 'auto',
-                justifyContent: isMobile ? 'center' : 'flex-start',
-              }}>
+            <button onClick={() => navigate('/publish')}
+              style={{ flexShrink: 0, background: '#fff', color: '#00513F', border: 'none', borderRadius: 12, padding: '14px 28px', fontSize: '1.5rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', alignSelf: isMobile ? 'stretch' : 'auto', justifyContent: isMobile ? 'center' : 'flex-start' }}>
               Commencer <ArrowRight style={{ width: 18, height: 18 }} />
             </button>
           </div>
         </div>
 
         {/* 4. Banner agences */}
-        <div style={{
-          position: 'relative',
-          borderRadius: 20,
-          overflow: 'hidden',
-          background: 'linear-gradient(135deg, #0F2D4A 0%, #1B4F82 100%)',
-          padding: isMobile ? '24px 20px' : '28px 40px',
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          alignItems: isMobile ? 'flex-start' : 'center',
-          justifyContent: 'space-between',
-          gap: isMobile ? 20 : 24,
-        }}>
+        <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', background: 'linear-gradient(135deg, #0F2D4A 0%, #1B4F82 100%)', padding: isMobile ? '24px 20px' : '28px 40px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: isMobile ? 20 : 24 }}>
           <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 300, opacity: 0.08, pointerEvents: 'none' }}>
             <svg viewBox="0 0 300 120" style={{ height: '100%', width: '100%' }}>
               <path d="M0 60 Q75 0 150 60 Q225 120 300 60 L300 120 L0 120 Z" fill="white" />
             </svg>
           </div>
           <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 14 : 24, position: 'relative' }}>
-            {/* Avatars */}
             <div style={{ display: 'flex', alignItems: 'center' }}>
               {['#4A90D9', '#E8A87C', '#7BB8A0', '#D4789C'].map((color, i) => (
                 <div key={i} style={{ width: 48, height: 48, borderRadius: '50%', background: color, border: '3px solid rgba(255,255,255,0.9)', marginLeft: i === 0 ? 0 : -12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
@@ -481,26 +419,8 @@ export function Home() {
               <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.4rem' }}>Des agents vérifiés, disponibles dans toute l'Algérie</p>
             </div>
           </div>
-          <button
-            onClick={() => navigate('/agences')}
-            style={{
-              flexShrink: 0,
-              background: '#fff',
-              color: '#0F2D4A',
-              border: 'none',
-              borderRadius: 12,
-              padding: '14px 28px',
-              fontSize: '1.5rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-              whiteSpace: 'nowrap',
-              alignSelf: isMobile ? 'stretch' : 'auto',
-            }}>
+          <button onClick={() => navigate('/agences')}
+            style={{ flexShrink: 0, background: '#fff', color: '#0F2D4A', border: 'none', borderRadius: 12, padding: '14px 28px', fontSize: '1.5rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.2)', whiteSpace: 'nowrap', alignSelf: isMobile ? 'stretch' : 'auto' }}>
             Voir les agences <ArrowRight style={{ width: 18, height: 18 }} />
           </button>
         </div>
@@ -510,31 +430,14 @@ export function Home() {
           <h2 style={{ fontSize: isMobile ? '2rem' : '2.8rem', fontWeight: 800, color: '#111827', textAlign: 'center', marginBottom: 20 }}>
             Parcourir les biens en Algérie
           </h2>
-
-          {/* Onglets wilayas — scroll horizontal sur mobile */}
           <div style={{ marginBottom: 28, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: isMobile ? 'flex-start' : 'center',
-              minWidth: isMobile ? 'max-content' : 'auto',
-              padding: isMobile ? '0 4px' : 0,
-            }}>
+            <div style={{ display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', minWidth: isMobile ? 'max-content' : 'auto', padding: isMobile ? '0 4px' : 0 }}>
               <div style={{ display: 'flex', gap: 4, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 6 }}>
                 {WILAYAS_TABS.map(w => {
                   const active = activeWilaya === w;
                   return (
                     <button key={w} onClick={() => setActiveWilaya(w)}
-                      style={{
-                        padding: isMobile ? '8px 14px' : '8px 20px',
-                        borderRadius: 8,
-                        border: active ? '1.5px solid #1B4FD8' : '1.5px solid transparent',
-                        background: active ? '#EEF2FF' : 'transparent',
-                        color: active ? '#1B4FD8' : '#374151',
-                        fontSize: isMobile ? '1.3rem' : '1.4rem',
-                        fontWeight: active ? 700 : 500,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                      }}>
+                      style={{ padding: isMobile ? '8px 14px' : '8px 20px', borderRadius: 8, border: active ? '1.5px solid #1B4FD8' : '1.5px solid transparent', background: active ? '#EEF2FF' : 'transparent', color: active ? '#1B4FD8' : '#374151', fontSize: isMobile ? '1.3rem' : '1.4rem', fontWeight: active ? 700 : 500, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                       {w}
                     </button>
                   );
@@ -543,20 +446,12 @@ export function Home() {
             </div>
           </div>
 
-          {/* Grille — 2 colonnes sur mobile, 4 sur desktop */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-            gap: isMobile ? 12 : 20,
-          }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 12 : 20 }}>
             {loading
-              ? [...Array(4)].map((_, i) => (
-                  <div key={i} style={{ height: isMobile ? 220 : 280, background: '#f3f4f6', borderRadius: 14 }} />
-                ))
+              ? [...Array(4)].map((_, i) => <div key={i} style={{ height: isMobile ? 220 : 280, background: '#f3f4f6', borderRadius: 14 }} />)
               : filteredByWilaya.length > 0
                 ? filteredByWilaya.map(listing => (
-                    <div key={listing.id}
-                      onClick={() => navigate(`/listing/${listing.id}`)}
+                    <div key={listing.id} onClick={() => navigate(`/listing/${listing.id}`)}
                       style={{ background: '#fff', borderRadius: 14, overflow: 'hidden', border: '1px solid #E5E7EB', cursor: 'pointer', transition: 'box-shadow 0.2s' }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = 'none'}>
@@ -574,12 +469,12 @@ export function Home() {
                         </p>
                         <div style={{ marginBottom: 10 }}>
                           <p style={{ fontSize: '1rem', color: '#9CA3AF', marginBottom: 2 }}>Prix</p>
+                          {/* ✅ Prix formaté */}
                           <p style={{ fontSize: isMobile ? '1.3rem' : '1.5rem', fontWeight: 800, color: '#1B4FD8' }}>
-                            {listing.price?.toLocaleString('fr-DZ') ?? '—'} DA
+                            {smartPrice(listing.price)}
                           </p>
                         </div>
-                        <button
-                          onClick={e => e.stopPropagation()}
+                        <button onClick={e => e.stopPropagation()}
                           style={{ width: '100%', background: '#F0FDF4', color: '#16A34A', border: '1px solid #86EFAC', borderRadius: 10, padding: '8px 0', fontSize: '1.2rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                           💬 Contacter
                         </button>
@@ -595,8 +490,7 @@ export function Home() {
           </div>
 
           <div style={{ textAlign: 'center', marginTop: 24 }}>
-            <button
-              onClick={() => navigate(`/search${searchText.trim() ? `?q=${encodeURIComponent(searchText)}` : ''}`)}
+            <button onClick={() => navigate('/search')}
               style={{ background: 'none', border: '1.5px solid #1B4FD8', color: '#1B4FD8', borderRadius: 10, padding: '12px 32px', fontSize: '1.4rem', fontWeight: 700, cursor: 'pointer' }}>
               Voir tous les biens à {activeWilaya} →
             </button>
@@ -607,13 +501,7 @@ export function Home() {
       {/* ── FOOTER ── */}
       <footer style={{ background: '#111827', color: '#fff', marginTop: 64, padding: '48px 0 24px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: `0 ${px}` }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr 1fr',
-            gap: isMobile ? 32 : 40,
-            marginBottom: 40,
-          }}>
-            {/* Brand */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr 1fr', gap: isMobile ? 32 : 40, marginBottom: 40 }}>
             <div>
               <p style={{ fontSize: '2.8rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.04em', marginBottom: 12 }}>Darni</p>
               <p style={{ fontSize: '1.3rem', color: '#9CA3AF', lineHeight: 1.6, marginBottom: 20, maxWidth: 280 }}>
@@ -627,8 +515,6 @@ export function Home() {
                 ))}
               </div>
             </div>
-
-            {/* Colonnes liens — côte à côte sur mobile */}
             {isMobile ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                 {[
@@ -639,9 +525,7 @@ export function Home() {
                   <div key={col.title}>
                     <p style={{ fontSize: '1.4rem', fontWeight: 700, color: '#fff', marginBottom: 12 }}>{col.title}</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {col.links.map(link => (
-                        <a key={link} href="#" style={{ fontSize: '1.3rem', color: '#9CA3AF', textDecoration: 'none' }}>{link}</a>
-                      ))}
+                      {col.links.map(link => <a key={link} href="#" style={{ fontSize: '1.3rem', color: '#9CA3AF', textDecoration: 'none' }}>{link}</a>)}
                     </div>
                   </div>
                 ))}
@@ -670,13 +554,8 @@ export function Home() {
             )}
           </div>
 
-          {/* Contact */}
           <div style={{ display: 'flex', gap: 16, paddingBottom: 32, borderBottom: '1px solid #1F2937', flexWrap: 'wrap' }}>
-            {[
-              { Icon: Mail,   text: 'contact@darni.app'  },
-              { Icon: Phone,  text: '+213 555 000 000'   },
-              { Icon: MapPin, text: 'Alger, Algérie'     },
-            ].map(({ Icon, text }) => (
+            {[{ Icon: Mail, text: 'contact@darni.app' }, { Icon: Phone, text: '+213 555 000 000' }, { Icon: MapPin, text: 'Alger, Algérie' }].map(({ Icon, text }) => (
               <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Icon style={{ width: 16, height: 16, color: '#1B4FD8', flexShrink: 0 }} />
                 <span style={{ fontSize: '1.3rem', color: '#9CA3AF' }}>{text}</span>
@@ -684,7 +563,6 @@ export function Home() {
             ))}
           </div>
 
-          {/* Bottom */}
           <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', paddingTop: 24, gap: 12 }}>
             <p style={{ fontSize: '1.2rem', color: '#6B7280' }}>© 2026 Darni.app — Tous droits réservés</p>
             <div style={{ display: 'flex', gap: 20 }}>
