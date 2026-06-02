@@ -163,8 +163,8 @@ export function Home() {
       {/* ── HERO ── */}
       {isMobile ? (
         <div style={{ marginBottom: 24 }}>
-          <div style={{ position: 'relative', height: 240, overflow: 'hidden' }}>
-            <img src="/hero.png" alt="Darni" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center' }} />
+          <div style={{ position: 'relative', height: 300, overflow: 'hidden' }}>
+            <img src="/hero.png" alt="Darni" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)' }} />
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 20px' }}>
               <h1 style={{ color: '#fff', fontSize: '2.8rem', fontWeight: 900, textAlign: 'center', textShadow: '0 2px 12px rgba(0,0,0,0.6)', lineHeight: 1.15, marginBottom: 6 }}>
