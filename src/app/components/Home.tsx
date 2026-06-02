@@ -228,10 +228,10 @@ export function Home() {
         </div>
       ) : (
         /* ── DESKTOP : hero full-width, pas de coins arrondis ── */
-        <div style={{ position: 'relative', overflow: 'hidden', height: 560, marginBottom: 40 }}>
+        <div style={{ position: 'relative', overflow: 'hidden', height: 650, marginBottom: 40 }}>
           <img src="/hero.png" alt="Darni"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.7)' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.25) 100%)' }} />
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', filter: 'brightness(0.82)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.3) 100%)' }} />
           <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '0 20px', maxWidth: 680, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
             <h1 style={{ color: '#fff', fontSize: '4.4rem', fontWeight: 900, letterSpacing: '-0.02em', textAlign: 'center', marginBottom: 8, textShadow: '0 2px 16px rgba(0,0,0,0.5)', lineHeight: 1.1 }}>
               Trouvez votre futur chez-vous.
