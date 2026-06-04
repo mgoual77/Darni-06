@@ -7,6 +7,7 @@ import { Profile } from "./components/Profile";
 import PostAnnonce from "./components/PostAnnonce";
 import MesAnnonces from "./components/MesAnnonces";
 import { AboutPage } from "./components/AboutPage";
+import { SamsaraPage } from './components/SamsaraPage';
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/mes-annonces" element={<MesAnnonces />} />
           <Route path="/a-propos" element={<AboutPage />} />
+<Route path="/samsara" element={<SamsaraPage />} /> 
         </Routes>
       </div>
     </BrowserRouter>
