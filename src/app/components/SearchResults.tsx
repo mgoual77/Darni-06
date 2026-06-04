@@ -361,17 +361,17 @@ export function SearchResults() {
                   {/* Badge transaction — discret, en bas de photo */}
                   <div style={{ position: 'absolute', bottom: 8, left: 8, display: 'flex', gap: 4 }}>
                     <span style={{
-                      background: listing.transaction === 'location' ? '#059669' : '#1B4FD8',
+                      background: listing.transaction === 'location' ? 'linear-gradient(135deg, #1B4FD8, #06b6d4)' : 'linear-gradient(135deg, #1B4FD8, #4F46E5)',
                       color: '#fff', fontSize: '1rem', fontWeight: 700,
                       padding: '3px 8px', borderRadius: 4,
                     }}>
                       {listing.transaction === 'location' ? 'Location' : 'Vente'}
                     </span>
                     {listing.is_featured && (
-                      <span style={{ background: '#eec64f', color: '#7a4f00', fontSize: '1rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4 }}>Vedette</span>
+                      <span style={{ background: 'linear-gradient(135deg, #1B4FD8, #7C3AED)', color: '#fff', fontSize: '1rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4 }}>Vedette</span>
                     )}
                     {newListing && (
-                      <span style={{ background: '#EF4444', color: '#fff', fontSize: '1rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4 }}>Nouveau</span>
+                      <span style={{ background: 'linear-gradient(135deg, #1B4FD8, #06b6d4)', color: '#fff', fontSize: '1rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4 }}>Nouveau</span>
                     )}
                   </div>
 
