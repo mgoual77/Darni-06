@@ -48,14 +48,14 @@ function isNew(created_at?: string): boolean {
 }
 
 const BADGE_STYLES: Record<string, { bg: string; text: string }> = {
-  vente:      { bg: '#1B4FD8', text: '#ffffff' },
-  location:   { bg: '#059669', text: '#ffffff' },
-  colocation: { bg: '#EA580C', text: '#ffffff' },
-  terrain:    { bg: '#7C3AED', text: '#ffffff' },
-  Vente:      { bg: '#1B4FD8', text: '#ffffff' },
-  Location:   { bg: '#059669', text: '#ffffff' },
-  Colocation: { bg: '#EA580C', text: '#ffffff' },
-  Terrain:    { bg: '#7C3AED', text: '#ffffff' },
+  vente:      { bg: 'linear-gradient(135deg, #1B4FD8, #4F46E5)', text: '#ffffff' },
+  location:   { bg: 'linear-gradient(135deg, #1B4FD8, #06b6d4)', text: '#ffffff' },
+  colocation: { bg: 'linear-gradient(135deg, #1B4FD8, #7C3AED)', text: '#ffffff' },
+  terrain:    { bg: 'linear-gradient(135deg, #1B4FD8, #0369a1)', text: '#ffffff' },
+  Vente:      { bg: 'linear-gradient(135deg, #1B4FD8, #4F46E5)', text: '#ffffff' },
+  Location:   { bg: 'linear-gradient(135deg, #1B4FD8, #06b6d4)', text: '#ffffff' },
+  Colocation: { bg: 'linear-gradient(135deg, #1B4FD8, #7C3AED)', text: '#ffffff' },
+  Terrain:    { bg: 'linear-gradient(135deg, #1B4FD8, #0369a1)', text: '#ffffff' },
 };
 
 function Badge({ type, transaction }: { type: string; transaction?: string }) {
@@ -129,12 +129,12 @@ export function PropertyCard({
             {/* Badges top droite */}
             <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-end' }}>
               {newListing && (
-                <span style={{ background: '#EF4444', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>
+                <span style={{ background: 'linear-gradient(135deg, #1B4FD8, #06b6d4)', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>
                   🔥 Nouveau
                 </span>
               )}
               {(is_featured || featured) && (
-                <span style={{ background: '#eec64f', color: '#7a4f00', fontSize: '0.9rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>
+                <span style={{ background: 'linear-gradient(135deg, #1B4FD8, #7C3AED)', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>
                   ⭐ Vedette
                 </span>
               )}
@@ -220,7 +220,7 @@ export function PropertyCard({
             </div>
 
             {newListing && (
-              <span style={{ position: 'absolute', top: 10, right: 10, background: '#EF4444', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>
+              <span style={{ position: 'absolute', top: 10, right: 10, background: 'linear-gradient(135deg, #1B4FD8, #06b6d4)', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>
                 🔥 Nouveau
               </span>
             )}

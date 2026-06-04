@@ -91,7 +91,13 @@ const FEATURE_CARDS = [
 ];
 
 const BADGE_COLORS: Record<string, string> = {
-  Vente: '#1B4FD8', Location: '#16A34A', Colocation: '#EA580C', Terrain: '#7C3AED',
+  Vente: 'linear-gradient(135deg, #1B4FD8, #4F46E5)',
+  Location: 'linear-gradient(135deg, #1B4FD8, #06b6d4)',
+  Colocation: 'linear-gradient(135deg, #1B4FD8, #7C3AED)',
+  Terrain: 'linear-gradient(135deg, #1B4FD8, #0369a1)',
+  vente: 'linear-gradient(135deg, #1B4FD8, #4F46E5)',
+  location: 'linear-gradient(135deg, #1B4FD8, #06b6d4)',
+  terrain: 'linear-gradient(135deg, #1B4FD8, #0369a1)',
 };
 
 function smartPrice(price: number): string {
