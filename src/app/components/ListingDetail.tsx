@@ -250,7 +250,7 @@ export default function ListingDetail() {
               <div style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer', background: '#E5E7EB' }}
                 onClick={() => setShowModal(true)}>
                 <img src={photos[0]} alt={listing.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center', transition: 'transform 0.4s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.03)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
                   onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900' }} />
@@ -274,7 +274,7 @@ export default function ListingDetail() {
                     onClick={() => { setActivePhoto(i); setShowModal(true) }}>
                     {photos[i] ? (
                       <img src={photos[i]} alt={`Photo ${i + 1}`}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center', transition: 'transform 0.3s' }}
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
                         onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400' }} />
