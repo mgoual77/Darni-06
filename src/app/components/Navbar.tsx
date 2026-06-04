@@ -1,14 +1,14 @@
-import { Home, Search, PlusCircle, User, Bell, LayoutList, Menu, X } from 'lucide-react';
+import { Home, Search, PlusCircle, User, Bell, LayoutList, Menu, X, Info } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { AuthModal } from './AuthModal';
 import { useState, useEffect } from 'react';
 
 const NAV_LINKS = [
-  { label: 'Acheter',    to: '/search', badge: null   },
-  { label: 'Louer',      to: '/search', badge: null   },
-  { label: 'Agences',    to: '/search', badge: 'NEW'  },
-  { label: 'Estimation', to: '/search', badge: 'BETA' },
+  { label: 'Acheter',   to: '/search',   badge: null   },
+  { label: 'Louer',     to: '/search',   badge: null   },
+  { label: 'Agences',   to: '/search',   badge: 'NEW'  },
+  { label: 'À propos',  to: '/a-propos', badge: null   },
 ];
 
 function useIsMobile() {
@@ -32,7 +32,6 @@ export function Navbar() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Ferme le menu mobile à chaque changement de route
   useEffect(() => { setShowMobileMenu(false); }, [location.pathname]);
 
   return (
@@ -71,49 +70,53 @@ export function Navbar() {
           {/* Liens navigation — desktop uniquement */}
           {!isMobile && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {NAV_LINKS.map(({ label, to, badge }) => (
-                <Link
-                  key={label}
-                  to={to}
-                  style={{
-                    textDecoration: 'none',
-                    position: 'relative',
-                    padding: '8px 14px',
-                    borderRadius: 8,
-                    fontSize: '1.4rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.color = '#1B4FD8';
-                    (e.currentTarget as HTMLElement).style.background = '#EEF2FF';
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLElement).style.color = '#374151';
-                    (e.currentTarget as HTMLElement).style.background = 'transparent';
-                  }}
-                >
-                  {label}
-                  {badge && (
-                    <span style={{
-                      fontSize: '0.9rem',
-                      fontWeight: 800,
-                      color: '#fff',
-                      background: badge === 'NEW' ? '#EF4444' : '#eec64f',
-                      padding: '1px 5px',
-                      borderRadius: 4,
-                      letterSpacing: '0.03em',
-                      lineHeight: 1.4,
-                    }}>
-                      {badge}
-                    </span>
-                  )}
-                </Link>
-              ))}
+              {NAV_LINKS.map(({ label, to, badge }) => {
+                const active = isActive(to);
+                return (
+                  <Link
+                    key={label}
+                    to={to}
+                    style={{
+                      textDecoration: 'none',
+                      position: 'relative',
+                      padding: '8px 14px',
+                      borderRadius: 8,
+                      fontSize: '1.4rem',
+                      fontWeight: active ? 700 : 600,
+                      color: active ? '#1B4FD8' : '#374151',
+                      background: active ? '#EEF2FF' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.color = '#1B4FD8';
+                      (e.currentTarget as HTMLElement).style.background = '#EEF2FF';
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.color = active ? '#1B4FD8' : '#374151';
+                      (e.currentTarget as HTMLElement).style.background = active ? '#EEF2FF' : 'transparent';
+                    }}
+                  >
+                    {label}
+                    {badge && (
+                      <span style={{
+                        fontSize: '0.9rem',
+                        fontWeight: 800,
+                        color: '#fff',
+                        background: badge === 'NEW' ? '#EF4444' : '#eec64f',
+                        padding: '1px 5px',
+                        borderRadius: 4,
+                        letterSpacing: '0.03em',
+                        lineHeight: 1.4,
+                      }}>
+                        {badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           )}
 
@@ -229,7 +232,6 @@ export function Navbar() {
               zIndex: 50,
               padding: '8px 0 16px',
             }}>
-              {/* Liens nav */}
               {NAV_LINKS.map(({ label, to, badge }) => (
                 <Link
                   key={label}
@@ -241,10 +243,11 @@ export function Navbar() {
                     gap: 10,
                     padding: '14px 20px',
                     textDecoration: 'none',
-                    color: '#374151',
+                    color: isActive(to) ? '#1B4FD8' : '#374151',
                     fontSize: '1.5rem',
-                    fontWeight: 600,
+                    fontWeight: isActive(to) ? 700 : 600,
                     borderBottom: '1px solid #F9FAFB',
+                    background: isActive(to) ? '#EEF2FF' : 'transparent',
                   }}
                 >
                   {label}
@@ -263,10 +266,8 @@ export function Navbar() {
                 </Link>
               ))}
 
-              {/* Séparateur */}
               <div style={{ height: 1, background: '#E5E7EB', margin: '8px 0' }} />
 
-              {/* Connexion ou profil */}
               {!loading && user ? (
                 <>
                   <Link to="/mes-annonces" onClick={() => setShowMobileMenu(false)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', textDecoration: 'none', color: '#374151', fontSize: '1.5rem', fontWeight: 600, borderBottom: '1px solid #F9FAFB' }}>
@@ -298,9 +299,7 @@ export function Navbar() {
       {isMobile && (
         <div style={{
           position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
+          bottom: 0, left: 0, right: 0,
           zIndex: 50,
           background: '#fff',
           borderTop: '1px solid #F3F4F6',
@@ -312,7 +311,7 @@ export function Navbar() {
               { to: '/search',       icon: Search,     label: 'Recherche' },
               { to: '/poster',       icon: PlusCircle, label: 'Publier'   },
               { to: '/mes-annonces', icon: LayoutList, label: 'Annonces'  },
-              { to: '/profile',      icon: User,       label: 'Profil'    },
+              { to: '/a-propos',     icon: Info,       label: 'À propos'  },
             ].map(({ to, icon: Icon, label }) => {
               const active = isActive(to);
               return (
@@ -331,11 +330,8 @@ export function Navbar() {
                   }}
                 >
                   <div style={{
-                    width: 40,
-                    height: 40,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    width: 40, height: 40,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                     borderRadius: 12,
                     background: active ? '#EEF2FF' : 'transparent',
                     transition: 'background 0.15s',
@@ -350,10 +346,7 @@ export function Navbar() {
         </div>
       )}
 
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-      />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </>
   );
 }
