@@ -4,53 +4,74 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- ── SEO ── -->
-    <title>Darni — Immobilier en Algérie | Achat, Vente, Location</title>
-    <meta name="description" content="Darni est la plateforme immobilière de référence en Algérie. Trouvez votre appartement, villa, terrain ou local commercial. Annonces vérifiées, contact direct vendeur." />
-    <meta name="keywords" content="immobilier algérie, appartement alger, villa vente algérie, location appartement, annonces immobilières dz" />
+    <!-- ── SEO de base ── -->
+    <title>Darni — Immobilier en Algérie | Appartements, Villas, Terrains</title>
+    <meta name="description" content="Trouvez votre bien immobilier en Algérie : appartements, villas, terrains à vendre ou à louer dans les 48 wilayas. Annonces vérifiées, contact direct via WhatsApp." />
+    <meta name="keywords" content="immobilier algérie, appartement vente alger, villa oran, terrain constantine, location appartement algérie, annonces immobilières dz" />
     <meta name="author" content="Darni" />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://darni.app/" />
+    <link rel="canonical" href="https://darni.app" />
 
-    <!-- ── Open Graph (partage réseaux sociaux) ── -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Darni — Immobilier en Algérie" />
-    <meta property="og:description" content="Trouvez votre bien immobilier en Algérie. Appartements, villas, terrains, locaux. Contact direct avec les vendeurs." />
-    <meta property="og:url" content="https://darni.app/" />
-    <meta property="og:image" content="https://darni.app/icons/icon-512.png" />
-    <meta property="og:locale" content="fr_DZ" />
-    <meta property="og:site_name" content="Darni" />
+    <!-- ── Open Graph ── -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content="https://darni.app" />
+    <meta property="og:title"       content="Darni — Immobilier en Algérie" />
+    <meta property="og:description" content="Trouvez votre bien immobilier en Algérie : appartements, villas, terrains à vendre ou à louer dans les 48 wilayas." />
+    <meta property="og:image"       content="https://darni.app/og-image.jpg" />
+    <meta property="og:site_name"   content="Darni" />
+    <meta property="og:locale"      content="fr_DZ" />
 
     <!-- ── Twitter Card ── -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Darni — Immobilier en Algérie" />
-    <meta name="twitter:description" content="Trouvez votre bien immobilier en Algérie. Appartements, villas, terrains, locaux." />
-    <meta name="twitter:image" content="https://darni.app/icons/icon-512.png" />
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content="Darni — Immobilier en Algérie" />
+    <meta name="twitter:description" content="Trouvez votre bien immobilier en Algérie : appartements, villas, terrains à vendre ou à louer dans les 48 wilayas." />
+    <meta name="twitter:image"       content="https://darni.app/og-image.jpg" />
+
+    <!-- ── Favicon ── -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- ── JSON-LD Organisation ── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Darni",
+      "url": "https://darni.app",
+      "logo": "https://darni.app/logo.png",
+      "description": "Plateforme immobilière 100% algérienne",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "DZ"
+      },
+      "sameAs": [
+        "https://www.instagram.com/darni.app"
+      ]
+    }
+    </script>
+
+    <!-- ── JSON-LD WebSite avec SearchAction ── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Darni",
+      "url": "https://darni.app",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://darni.app/search?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
 
     <!-- ── PWA ── -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1B4FD8" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Darni" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-
-    <!-- ── Favicon ── -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
-
-    <!-- ── Fonts ── -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet" />
-
-    <style>
-      html, body { height: 100%; margin: 0; }
-      #root { height: 100%; }
-    </style>
   </head>
-
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, SlidersHorizontal, ArrowUpDown, MapPin, Phone, MessageCircle, Bookmark, Search, ChevronDown, Map, X, Check } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useSEO } from '../../hooks/useSEO'
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -54,6 +55,12 @@ const PRICE_SUGGESTIONS = [
 type SortOption = 'recent' | 'prix-asc' | 'prix-desc';
 
 export function SearchResults() {
+  useSEO({
+    title: 'Recherche immobilière en Algérie',
+    description: "Recherchez parmi des milliers d'annonces immobilières vérifiées en Algérie. Filtrez par wilaya, type, prix et surface.",
+    url: 'https://darni.app/search',
+  })
+
   const navigate   = useNavigate();
   const [params]   = useSearchParams();
   const isMobile   = useIsMobile();

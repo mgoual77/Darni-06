@@ -3,6 +3,7 @@ import { Search, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, Mail, Phone
 import { PropertyCard } from './PropertyCard';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useSEO } from '../../hooks/useSEO'
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -154,6 +155,12 @@ const FOOTER_COLS = [
 ];
 
 export function Home() {
+  useSEO({
+    title: 'Immobilier en Algérie — Appartements, Villas, Terrains',
+    description: 'Trouvez votre bien immobilier en Algérie : appartements, villas, terrains à vendre ou à louer dans les 48 wilayas. Annonces vérifiées, contact direct via WhatsApp.',
+    url: 'https://darni.app',
+  })
+
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 

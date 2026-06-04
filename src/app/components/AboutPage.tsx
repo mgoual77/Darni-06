@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { ArrowRight, CheckCircle, X, Star, Home, Building2, Users, MapPin, TrendingUp, Shield, Zap, Heart, Globe, Award } from 'lucide-react';
+import { useSEO } from '../../hooks/useSEO'
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -111,6 +112,12 @@ const TESTIMONIALS = [
 ];
 
 export function AboutPage() {
+  useSEO({
+    title: 'À propos — La plateforme immobilière 100% algérienne',
+    description: "Darni est la plateforme immobilière 100% algérienne. Achetez, vendez ou louez dans les 48 wilayas avec des annonces vérifiées.",
+    url: 'https://darni.app/a-propos',
+  })
+
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [statsVisible, setStatsVisible] = useState(false);

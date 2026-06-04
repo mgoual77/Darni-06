@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Pages à ne pas indexer
+Disallow: /profile
+Disallow: /mes-annonces
+Disallow: /poster
+
+# Sitemap
+Sitemap: https://darni.app/sitemap.xml

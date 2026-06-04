@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, MapPin, Star, Phone, MessageCircle, Filter, ChevronDown, Shield, TrendingUp, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useSEO } from '../../hooks/useSEO'
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -86,6 +87,12 @@ const AGENTS = [
 ];
 
 export function SamsaraPage() {
+  useSEO({
+    title: 'Trouvez un agent immobilier en Algérie — Samsara',
+    description: "Des agents immobiliers vérifiés et notés dans toutes les wilayas d'Algérie. Contactez votre Samsar de confiance directement.",
+    url: 'https://darni.app/samsara',
+  })
+
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
