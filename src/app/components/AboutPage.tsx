@@ -31,13 +31,13 @@ function useCountUp(target: number, duration: number = 2000, start: boolean = fa
 
 const PLANS = [
   {
-    name: 'Gratuit',
-    price: '0',
-    currency: '',
-    period: 'pour toujours',
-    color: '#6B7280',
-    bg: '#F9FAFB',
-    border: '#E5E7EB',
+    name: 'Bronze',
+    tier: 'Particuliers',
+    emoji: '🥉',
+    tagline: 'Pour débuter — Gratuit',
+    color: '#92400E',
+    bg: '#FFFBEB',
+    border: '#D97706',
     badge: null,
     features: [
       { label: 'Annonces actives',       value: '3 max',   ok: true  },
@@ -51,16 +51,17 @@ const PLANS = [
       { label: 'Profil agence dédié',    value: '',         ok: false },
     ],
     cta: 'Commencer gratuitement',
-    ctaStyle: { background: '#F3F4F6', color: '#374151', border: '1.5px solid #E5E7EB' },
+    ctaContact: false,
+    ctaStyle: { background: '#D97706', color: '#fff', border: 'none' },
   },
   {
-    name: 'Samsar',
-    price: '4.99',
-    currency: '€',
-    period: '/mois',
-    color: '#1B4FD8',
-    bg: '#EEF2FF',
-    border: '#1B4FD8',
+    name: 'Argent',
+    tier: 'Agents & Samsara',
+    emoji: '🥈',
+    tagline: 'Pour les agents indépendants',
+    color: '#374151',
+    bg: '#F9FAFB',
+    border: '#6B7280',
     badge: 'Populaire',
     features: [
       { label: 'Annonces actives',       value: '20 max',  ok: true  },
@@ -73,18 +74,19 @@ const PLANS = [
       { label: 'Support prioritaire',    value: '',         ok: false },
       { label: 'Profil agence dédié',    value: '',         ok: false },
     ],
-    cta: 'Essayer Samsar — 4,99€/mois',
-    ctaStyle: { background: '#1B4FD8', color: '#fff', border: 'none' },
+    cta: 'Nous contacter',
+    ctaContact: true,
+    ctaStyle: { background: '#374151', color: '#fff', border: 'none' },
   },
   {
-    name: 'Agence Pro',
-    price: '29.99',
-    currency: '€',
-    period: '/mois',
-    color: '#00705A',
-    bg: '#F0FDF4',
-    border: '#00705A',
-    badge: 'Meilleure valeur',
+    name: 'Gold',
+    tier: 'Agences Pro',
+    emoji: '🥇',
+    tagline: 'Pour les agences immobilières',
+    color: '#B45309',
+    bg: '#FEFCE8',
+    border: '#eec64f',
+    badge: 'Premium',
     features: [
       { label: 'Annonces actives',       value: 'Illimitées', ok: true },
       { label: 'Photos par annonce',     value: '20 max',     ok: true },
@@ -96,8 +98,9 @@ const PLANS = [
       { label: 'Support prioritaire',    value: '24h/24',     ok: true },
       { label: 'Profil agence dédié',    value: '',            ok: true },
     ],
-    cta: 'Devenir partenaire',
-    ctaStyle: { background: '#00705A', color: '#fff', border: 'none' },
+    cta: 'Nous contacter',
+    ctaContact: true,
+    ctaStyle: { background: '#eec64f', color: '#7a4f00', border: 'none' },
   },
 ];
 
@@ -291,12 +294,10 @@ export function AboutPage() {
                 )}
 
                 <div style={{ marginBottom: 20 }}>
-                  <p style={{ fontSize: '1.3rem', fontWeight: 700, color: plan.color, marginBottom: 8 }}>{plan.name}</p>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                    <span style={{ fontSize: '1.4rem', fontWeight: 700, color: '#374151' }}>{plan.currency}</span>
-                    <span style={{ fontSize: '3.6rem', fontWeight: 900, color: '#111827', lineHeight: 1 }}>{plan.price}</span>
-                    <span style={{ fontSize: '1.3rem', color: '#9CA3AF' }}>{plan.period}</span>
-                  </div>
+                  <div style={{ fontSize: '3.2rem', marginBottom: 10 }}>{plan.emoji}</div>
+                  <p style={{ fontSize: '2rem', fontWeight: 900, color: plan.color, marginBottom: 4 }}>{plan.name}</p>
+                  <p style={{ fontSize: '1.2rem', color: '#6B7280', fontWeight: 500, marginBottom: 4 }}>{plan.tier}</p>
+                  <p style={{ fontSize: '1.3rem', color: '#374151', fontWeight: 600 }}>{plan.tagline}</p>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
@@ -314,10 +315,18 @@ export function AboutPage() {
                   ))}
                 </div>
 
-                <button onClick={(e) => { e.stopPropagation(); navigate('/publish'); }}
-                  style={{ width: '100%', padding: '13px 0', borderRadius: 10, fontSize: '1.4rem', fontWeight: 700, cursor: 'pointer', ...plan.ctaStyle }}>
-                  {plan.cta}
-                </button>
+                {plan.ctaContact ? (
+                  <a href="mailto:contact@darni.app?subject=Offre%20Darni%20Pro"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ display: 'block', width: '100%', padding: '13px 0', borderRadius: 10, fontSize: '1.4rem', fontWeight: 700, cursor: 'pointer', textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box', ...plan.ctaStyle }}>
+                    ✉️ {plan.cta}
+                  </a>
+                ) : (
+                  <button onClick={(e) => { e.stopPropagation(); navigate('/publish'); }}
+                    style={{ width: '100%', padding: '13px 0', borderRadius: 10, fontSize: '1.4rem', fontWeight: 700, cursor: 'pointer', ...plan.ctaStyle }}>
+                    {plan.cta}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -330,7 +339,9 @@ export function AboutPage() {
                   <tr style={{ background: '#F7F8FA' }}>
                     <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '1.3rem', color: '#6B7280', fontWeight: 600, width: '40%' }}>Fonctionnalité</th>
                     {PLANS.map(p => (
-                      <th key={p.name} style={{ padding: '16px 20px', textAlign: 'center', fontSize: '1.3rem', color: p.color, fontWeight: 800 }}>{p.name}</th>
+                      <th key={p.name} style={{ padding: '16px 20px', textAlign: 'center', fontSize: '1.3rem', color: p.color, fontWeight: 800 }}>
+                        {p.emoji} {p.name}
+                      </th>
                     ))}
                   </tr>
                 </thead>
