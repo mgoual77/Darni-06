@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Search, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, Mail, Phone, MapPin, Instagram, Twitter, Facebook } from 'lucide-react';
 import { PropertyCard } from './PropertyCard';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 function useIsMobile() {
@@ -24,7 +24,6 @@ const HERO_TABS = [
 
 const WILAYAS_TABS = ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Sétif'];
 
-// ✅ Tranches de prix corrigées
 const PRICE_RANGES = [
   { label: '< 1M DA',   min: '',         max: '1000000'  },
   { label: '1–3M DA',   min: '1000000',  max: '3000000'  },
@@ -95,7 +94,6 @@ const BADGE_COLORS: Record<string, string> = {
   Vente: '#1B4FD8', Location: '#16A34A', Colocation: '#EA580C', Terrain: '#7C3AED',
 };
 
-// ✅ Prix formaté intelligemment
 function smartPrice(price: number): string {
   if (!price) return '— DA';
   if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1).replace('.0', '')} Mrd DA`;
@@ -114,6 +112,40 @@ function firstPhoto(listing: any): string {
 function withImage(listing: any) {
   return { ...listing, image: firstPhoto(listing) };
 }
+
+// Liens footer avec routes
+const FOOTER_COLS = [
+  {
+    title: 'Propriétés',
+    links: [
+      { label: 'Vente',             to: '/search?transaction=vente'    },
+      { label: 'Location',          to: '/search?transaction=location' },
+      { label: 'Colocation',        to: '/search'                      },
+      { label: 'Terrains',          to: '/search?type=terrain'         },
+      { label: 'Nouvelles annonces',to: '/search'                      },
+    ],
+  },
+  {
+    title: 'Wilayas',
+    links: [
+      { label: 'Alger',       to: '/search?q=Alger'       },
+      { label: 'Oran',        to: '/search?q=Oran'        },
+      { label: 'Constantine', to: '/search?q=Constantine' },
+      { label: 'Annaba',      to: '/search?q=Annaba'      },
+      { label: 'Blida',       to: '/search?q=Blida'       },
+    ],
+  },
+  {
+    title: 'Darni',
+    links: [
+      { label: 'À propos',          to: '/a-propos' },
+      { label: 'Contact',           to: '/a-propos' },
+      { label: 'Publier annonce',   to: '/publish'  },
+      { label: 'Agences partenaires', to: '/a-propos' },
+      { label: 'Aide',              to: '/a-propos' },
+    ],
+  },
+];
 
 export function Home() {
   const navigate = useNavigate();
@@ -185,7 +217,6 @@ export function Home() {
                     <button key={label} onClick={() => setHeroTab(label)}
                       style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '10px 10px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem', fontWeight: active ? 700 : 500, color: active ? '#1B4FD8' : '#6B7280', borderBottom: active ? '2px solid #1B4FD8' : '2px solid transparent', marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {label}
-                      {/* ✅ Badge NEW plus petit */}
                       {badge && <span style={{ background: '#EF4444', color: '#fff', fontSize: '0.7rem', fontWeight: 800, padding: '1px 4px', borderRadius: 3 }}>{badge}</span>}
                     </button>
                   );
@@ -227,7 +258,6 @@ export function Home() {
           </div>
         </div>
       ) : (
-        /* ── DESKTOP : hero full-width, pas de coins arrondis ── */
         <div style={{ position: 'relative', overflow: 'hidden', height: 650, marginBottom: 40 }}>
           <img src="/hero.png" alt="Darni"
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', filter: 'brightness(0.82)' }} />
@@ -247,7 +277,6 @@ export function Home() {
                     <button key={label} onClick={() => setHeroTab(label)}
                       style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '10px 12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.3rem', fontWeight: active ? 700 : 500, color: active ? '#1B4FD8' : '#6B7280', borderBottom: active ? '2px solid #1B4FD8' : '2px solid transparent', marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {label}
-                      {/* ✅ Badge NEW plus petit */}
                       {badge && <span style={{ background: '#EF4444', color: '#fff', fontSize: '0.7rem', fontWeight: 800, padding: '1px 4px', borderRadius: 3 }}>{badge}</span>}
                     </button>
                   );
@@ -284,7 +313,6 @@ export function Home() {
                     <ChevronDown style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#9CA3AF', pointerEvents: 'none' }} />
                   </div>
                 ))}
-                {/* Prix dropdown */}
                 <div style={{ position: 'relative', flex: 1 }}>
                   <button onClick={() => setShowPriceDropdown(!showPriceDropdown)}
                     style={{ width: '100%', padding: '7px 12px', background: showPriceDropdown ? '#EEF2FF' : '#fff', border: `1.5px solid ${showPriceDropdown ? '#1B4FD8' : '#E5E7EB'}`, borderRadius: 8, fontSize: '1.2rem', color: priceMin || priceMax ? '#1B4FD8' : '#374151', fontWeight: priceMin || priceMax ? 700 : 400, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
@@ -304,7 +332,6 @@ export function Home() {
                           </div>
                         ))}
                       </div>
-                      {/* ✅ Tranches corrigées */}
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
                         {PRICE_RANGES.map(s => (
                           <button key={s.label} onClick={() => { setPriceMin(s.min); setPriceMax(s.max); }}
@@ -385,7 +412,6 @@ export function Home() {
           </div>
           <div style={{ position: 'relative', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: isMobile ? 20 : 24 }}>
             <div>
-              {/* ✅ Badge NOUVEAU plus petit */}
               <span style={{ display: 'inline-block', background: '#EF4444', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '2px 7px', borderRadius: 4, marginBottom: 10, letterSpacing: '0.05em' }}>NOUVEAU</span>
               <h3 style={{ color: '#fff', fontSize: isMobile ? '2rem' : '2.6rem', fontWeight: 700, marginBottom: 6 }}>Vendez ou louez avec confiance</h3>
               <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1.5rem' }}>Des milliers d'acheteurs vérifient Darni chaque jour</p>
@@ -418,9 +444,9 @@ export function Home() {
               <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.4rem' }}>Des agents vérifiés, disponibles dans toute l'Algérie</p>
             </div>
           </div>
-          <button onClick={() => navigate('/agences')}
+          <button onClick={() => navigate('/a-propos')}
             style={{ flexShrink: 0, background: '#fff', color: '#0F2D4A', border: 'none', borderRadius: 12, padding: '14px 28px', fontSize: '1.5rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.2)', whiteSpace: 'nowrap', alignSelf: isMobile ? 'stretch' : 'auto' }}>
-            Voir les agences <ArrowRight style={{ width: 18, height: 18 }} />
+            En savoir plus <ArrowRight style={{ width: 18, height: 18 }} />
           </button>
         </div>
 
@@ -468,7 +494,6 @@ export function Home() {
                         </p>
                         <div style={{ marginBottom: 10 }}>
                           <p style={{ fontSize: '1rem', color: '#9CA3AF', marginBottom: 2 }}>Prix</p>
-                          {/* ✅ Prix formaté */}
                           <p style={{ fontSize: isMobile ? '1.3rem' : '1.5rem', fontWeight: 800, color: '#1B4FD8' }}>
                             {smartPrice(listing.price)}
                           </p>
@@ -514,37 +539,35 @@ export function Home() {
                 ))}
               </div>
             </div>
+
             {isMobile ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-                {[
-                  { title: 'Propriétés', links: ['Vente', 'Location', 'Colocation', 'Terrains', 'Nouvelles annonces'] },
-                  { title: 'Wilayas',    links: ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida'] },
-                  { title: 'Darni',      links: ["À propos", 'Contact', 'Publier annonce', 'Aide'] },
-                ].map(col => (
+                {FOOTER_COLS.map(col => (
                   <div key={col.title}>
                     <p style={{ fontSize: '1.4rem', fontWeight: 700, color: '#fff', marginBottom: 12 }}>{col.title}</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {col.links.map(link => <a key={link} href="#" style={{ fontSize: '1.3rem', color: '#9CA3AF', textDecoration: 'none' }}>{link}</a>)}
+                      {col.links.map(link => (
+                        <Link key={link.label} to={link.to} style={{ fontSize: '1.3rem', color: '#9CA3AF', textDecoration: 'none' }}>
+                          {link.label}
+                        </Link>
+                      ))}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <>
-                {[
-                  { title: 'Propriétés', links: ['Vente', 'Location', 'Colocation', 'Terrains', 'Nouvelles annonces'] },
-                  { title: 'Wilayas',    links: ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida'] },
-                  { title: 'Darni',      links: ["À propos", 'Contact', 'Publier annonce', 'Agences partenaires', 'Aide'] },
-                ].map(col => (
+                {FOOTER_COLS.map(col => (
                   <div key={col.title}>
                     <p style={{ fontSize: '1.4rem', fontWeight: 700, color: '#fff', marginBottom: 16 }}>{col.title}</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       {col.links.map(link => (
-                        <a key={link} href="#" style={{ fontSize: '1.3rem', color: '#9CA3AF', textDecoration: 'none' }}
+                        <Link key={link.label} to={link.to}
+                          style={{ fontSize: '1.3rem', color: '#9CA3AF', textDecoration: 'none' }}
                           onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#fff'}
                           onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#9CA3AF'}>
-                          {link}
-                        </a>
+                          {link.label}
+                        </Link>
                       ))}
                     </div>
                   </div>
