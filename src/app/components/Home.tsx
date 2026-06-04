@@ -264,7 +264,7 @@ export function Home() {
           </div>
         </div>
       ) : (
-        <div style={{ position: 'relative', overflow: 'hidden', height: 650, marginBottom: 40 }}>
+        <div style={{ position: 'relative', overflow: 'hidden', height: 720, marginBottom: 40 }}>
           <img src="/hero.png" alt="Darni"
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', filter: 'brightness(0.82)' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.3) 100%)' }} />
@@ -490,7 +490,7 @@ export function Home() {
                         <img src={listing.image} alt={listing.commune ?? listing.wilaya}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           onError={e => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg'; }} />
-                        <span style={{ position: 'absolute', top: 8, left: 8, background: BADGE_COLORS[listing.type] ?? '#1B4FD8', color: '#fff', fontSize: '1rem', fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>
+                        <span style={{ position: 'absolute', bottom: 8, left: 8, background: 'linear-gradient(135deg, #1B4FD8, #4F46E5)', color: '#fff', fontSize: '0.95rem', fontWeight: 700, padding: '2px 8px', borderRadius: 5 }}>
                           {listing.type?.charAt(0).toUpperCase() + listing.type?.slice(1)}
                         </span>
                       </div>

@@ -118,30 +118,9 @@ export function PropertyCard({
             {/* Gradient overlay bas */}
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%)' }} />
 
-            {/* Badges top gauche */}
-            <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
-              <span style={{ background: 'rgba(255,255,255,0.95)', color: '#059669', fontSize: '0.95rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 3, backdropFilter: 'blur(4px)' }}>
-                ✓ Vérifié
-              </span>
+            {/* Badge transaction uniquement */}
+            <div style={{ position: 'absolute', top: 10, left: 10 }}>
               <Badge type={type} transaction={transaction} />
-            </div>
-
-            {/* Badges top droite */}
-            <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-end' }}>
-              {newListing && (
-                <span style={{ background: 'linear-gradient(135deg, #1B4FD8, #06b6d4)', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>
-                  🔥 Nouveau
-                </span>
-              )}
-              {(is_featured || featured) && (
-                <span style={{ background: 'linear-gradient(135deg, #1B4FD8, #7C3AED)', color: '#fff', fontSize: '0.9rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>
-                  ⭐ Vedette
-                </span>
-              )}
-              <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 20, padding: '3px 8px', display: 'flex', alignItems: 'center', gap: 3, backdropFilter: 'blur(4px)' }}>
-                <Star style={{ width: 12, height: 12, fill: '#F5A623', color: '#F5A623' }} />
-                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151' }}>{rating}</span>
-              </div>
             </div>
 
             {/* Prix overlay bas */}
