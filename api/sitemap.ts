@@ -1,22 +1,20 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.VITE_SUPABASE_ANON_KEY!
+  'https://etcuelnixtwuazyfmnvm.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0Y3VlbG5peHR3dWF6eWZtbnZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMDc1MDgsImV4cCI6MjA5Mzg4MzUwOH0.TRT0s0y8RqgV0YggtvSjNsv07xbInLv1MmTRuQBJ7lY'
 )
 
 const BASE_URL = 'https://darni.app'
 
 const STATIC_PAGES = [
-  { loc: '/',          priority: '1.0', changefreq: 'daily'  },
-  { loc: '/recherche', priority: '0.8', changefreq: 'daily'  },
+  { loc: '/',          priority: '1.0', changefreq: 'daily'   },
+  { loc: '/recherche', priority: '0.8', changefreq: 'daily'   },
   { loc: '/publier',   priority: '0.7', changefreq: 'monthly' },
   { loc: '/a-propos',  priority: '0.5', changefreq: 'monthly' },
 ]
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Récupère toutes les annonces actives
+export default async function handler(req: Request): Promise<Response> {
   const { data: listings, error } = await supabase
     .from('listings')
     .select('id, updated_at, created_at')
@@ -24,12 +22,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .order('created_at', { ascending: false })
 
   if (error) {
-    return res.status(500).json({ error: error.message })
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
   }
 
   const urls: string[] = []
 
-  // Pages statiques
   for (const page of STATIC_PAGES) {
     urls.push(`
   <url>
@@ -39,7 +36,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   </url>`)
   }
 
-  // Pages dynamiques (annonces)
   for (const listing of listings ?? []) {
     const lastmod = (listing.updated_at ?? listing.created_at ?? '').slice(0, 10)
     urls.push(`
@@ -56,7 +52,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 ${urls.join('')}
 </urlset>`
 
-  res.setHeader('Content-Type', 'application/xml')
-  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate') // cache 1h sur Vercel
-  return res.status(200).send(xml)
+  return new Response(xml, {
+    headers: {
+      'Content-Type': 'application/xml',
+      'Cache-Control': 's-maxage=3600, stale-while-revalidate',
+    },
+  })
 }
