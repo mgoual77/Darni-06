@@ -36,13 +36,26 @@ const DOC_LABELS: Record<string, string> = {
   acte_notarie: 'Acte notarié', livret_foncier: 'Livret foncier', sans_titre: 'Sans titre',
 }
 
-const BLUE  = '#1B4FD8'
-const DARK  = '#111827'
-const GRAY  = '#6B7280'
+const BLUE    = '#1B4FD8'
+const DARK    = '#111827'
+const GRAY    = '#6B7280'
 const GRAY_LT = '#9CA3AF'
 const BORDER  = '#E5E7EB'
 const BG      = '#F7F8FA'
 
+// ── SEO helpers ──────────────────────────────────────────────────────────────
+function setMeta(name: string, content: string, prop = false) {
+  const attr = prop ? 'property' : 'name'
+  let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement
+  if (!el) {
+    el = document.createElement('meta')
+    el.setAttribute(attr, name)
+    document.head.appendChild(el)
+  }
+  el.setAttribute('content', content)
+}
+
+// ── Utils ────────────────────────────────────────────────────────────────────
 function extractPhotos(raw: any): string[] {
   const fb = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900'
   if (!raw || !Array.isArray(raw) || raw.length === 0) return [fb]
@@ -130,13 +143,38 @@ export default function ListingDetail() {
   const [showFullDesc, setShowFullDesc] = useState(false)
   const [saved, setSaved]               = useState(false)
 
+  // ── Fetch listing + SEO dynamique ────────────────────────────────────────
   useEffect(() => {
     if (!id) return
     setLoading(true)
+    const prevTitle = document.title
+
     supabase.from('listings').select('*').eq('id', id).single()
       .then(({ data, error }) => {
         if (!error && data) {
           setListing(data)
+
+          // ── Patch SEO ──
+          const photo = extractPhotos(data.photos)[0]
+          const loc   = [data.quartier, data.commune, data.wilaya].filter(Boolean).join(', ')
+          const seoTitle = `${data.title} – ${loc} | Darni`
+          const seoDesc  = data.description
+            ? data.description.slice(0, 155).replace(/\n/g, ' ') + '…'
+            : `${TYPE_LABELS[data.type] || data.type} à ${data.transaction === 'vente' ? 'vendre' : 'louer'} à ${loc}.${data.surface ? ' ' + data.surface + ' m².' : ''} Trouvez votre bien sur Darni.`
+
+          document.title = seoTitle
+          setMeta('description',    seoDesc)
+          setMeta('og:title',       seoTitle,             true)
+          setMeta('og:description', seoDesc,              true)
+          setMeta('og:image',       photo,                true)
+          setMeta('og:url',         window.location.href, true)
+          setMeta('og:type',        'website',            true)
+          setMeta('twitter:card',        'summary_large_image')
+          setMeta('twitter:title',       seoTitle)
+          setMeta('twitter:description', seoDesc)
+          setMeta('twitter:image',       photo)
+          // ── Fin patch SEO ──
+
           supabase.from('listings').select('*')
             .eq('wilaya', data.wilaya).eq('type', data.type)
             .eq('status', 'active').neq('id', id).limit(6)
@@ -144,6 +182,8 @@ export default function ListingDetail() {
         }
         setLoading(false)
       })
+
+    return () => { document.title = prevTitle }
   }, [id])
 
   if (loading) return (
