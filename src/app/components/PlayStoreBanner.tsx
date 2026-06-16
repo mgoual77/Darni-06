@@ -61,6 +61,11 @@ const ctaStyle = {
   whiteSpace: 'nowrap' as const,
 };
 
+const badgeStyle = {
+  height: '42px',
+  display: 'block',
+};
+
 const closeButtonStyle = {
   background: 'transparent',
   border: 'none',
@@ -94,9 +99,12 @@ export function PlayStoreBanner() {
           href="https://play.google.com/apps/internaltest/4700676223053107145"
           target="_blank"
           rel="noopener noreferrer"
-          style={ctaStyle}
         >
-          Tester maintenant
+          <img
+            src="https://etcuelnixtwuazyfmnvm.supabase.co/storage/v1/object/sign/Badge%20playstore/playstore%20badge.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9kMmQzZTU2My0wYTZhLTRkYzEtOGEwYi01OTYyZjAyNDA0YmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJCYWRnZSBwbGF5c3RvcmUvcGxheXN0b3JlIGJhZGdlLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODE2MDIxNDAsImV4cCI6MTg3NjIxMDE0MH0.f0pVPFt7CT87jGHzE-Pg4xIPM2LceZa4jbQ-iSL5Yt0"
+            alt="Disponible sur Google Play"
+            style={badgeStyle}
+          />
         </a>
         <button onClick={() => setVisible(false)} aria-label="Fermer" style={closeButtonStyle}>
           x
