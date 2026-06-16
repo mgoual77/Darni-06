@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "darni-app",
+    "slug": "darni-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "darni",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCbCrbbocArzRzzr0MYohUw6h0goJEhKlc"
+        }
+      },
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.mgoual.darniapp"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "978ea506-db3b-44e9-9735-f5d68641040b"
+      }
+    },
+    "plugins": [
+      "expo-web-browser"
+    ],
+    "owner": "mgoual"
+  }
+}

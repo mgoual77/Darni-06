@@ -8,11 +8,12 @@ import PostAnnonce from "./components/PostAnnonce";
 import MesAnnonces from "./components/MesAnnonces";
 import { AboutPage } from "./components/AboutPage";
 import { SamsaraPage } from './components/SamsaraPage';
+import { PlayStoreBanner } from './components/PlayStoreBanner';
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="size-full bg-gray-50">
+      <div className="size-full bg-gray-50" style={{ paddingBottom: '70px' }}>
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
@@ -23,8 +24,9 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/mes-annonces" element={<MesAnnonces />} />
           <Route path="/a-propos" element={<AboutPage />} />
-<Route path="/samsara" element={<SamsaraPage />} /> 
+          <Route path="/samsara" element={<SamsaraPage />} />
         </Routes>
+        <PlayStoreBanner />
       </div>
     </BrowserRouter>
   );
