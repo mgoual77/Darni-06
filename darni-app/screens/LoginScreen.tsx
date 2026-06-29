@@ -6,7 +6,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -36,46 +35,47 @@ export function LoginScreen({ navigation }: any) {
   const [mode,          setMode]          = useState<Mode>('login');
   const [email,         setEmail]         = useState('');
   const [password,      setPassword]      = useState('');
+  const [showPassword,  setShowPassword]  = useState(false);
   const [loading,       setLoading]       = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error,         setError]         = useState('');
   const [success,       setSuccess]       = useState('');
 
   useEffect(() => {
-    const handleUrl = async (event: { url: string }) => {
-      const { url } = event;
-      if (url.includes('access_token') || url.includes('code=')) {
-        const { error: err } = await supabase.auth.exchangeCodeForSession(url);
-        if (!err) navigation.replace('Main');
-      }
-    };
-    const sub = Linking.addEventListener('url', handleUrl);
-    Linking.getInitialURL().then(url => { if (url) handleUrl({ url }); });
-    return () => sub.remove();
+    // Nettoyage session WebBrowser au montage
+    WebBrowser.warmUpAsync();
+    return () => { WebBrowser.coolDownAsync(); };
   }, []);
 
   const signInWithGoogle = async () => {
     setGoogleLoading(true); setError('');
     try {
-      const redirectUrl = Linking.createURL('/');
+      const redirectUrl = 'darni://';
       const { data, error: err } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: redirectUrl, skipBrowserRedirect: true },
       });
-      if (err || !data?.url) { setError('Erreur Google. Réessayez.'); setGoogleLoading(false); return; }
+      if (err || !data?.url) {
+        setError('Erreur Google. Réessayez.');
+        setGoogleLoading(false);
+        return;
+      }
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
       if (result.type === 'success' && result.url) {
         const { error: sessErr } = await supabase.auth.exchangeCodeForSession(result.url);
         if (!sessErr) navigation.replace('Main');
         else setError('Erreur de session. Réessayez.');
+      } else if (result.type === 'cancel') {
+        setError('Connexion annulée.');
       }
-    } catch { setError('Une erreur est survenue.'); }
+    } catch {
+      setError('Une erreur est survenue.');
+    }
     setGoogleLoading(false);
   };
 
-  /* Réinitialisation mot de passe */
   const handleForgot = async () => {
-    if (!email) { setError('Entrez votre email d\'abord.'); return; }
+    if (!email) { setError("Entrez votre email d'abord."); return; }
     setLoading(true); setError(''); setSuccess('');
     const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: 'darni://reset-password',
@@ -97,7 +97,7 @@ export function LoginScreen({ navigation }: any) {
     else { navigation.replace('Main'); }
   };
 
-  /* ── Mode "Mot de passe oublié" ── */
+  // ── Mode "Mot de passe oublié" ──
   if (mode === 'forgot') {
     return (
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#fff' }}
@@ -131,7 +131,7 @@ export function LoginScreen({ navigation }: any) {
     );
   }
 
-  /* ── Mode Login / Signup ── */
+  // ── Mode Login / Signup ──
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#fff' }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -145,7 +145,8 @@ export function LoginScreen({ navigation }: any) {
         </Text>
 
         <TouchableOpacity style={styles.googleBtn} onPress={signInWithGoogle} disabled={googleLoading}>
-          {googleLoading ? <ActivityIndicator color="#444" size="small" />
+          {googleLoading
+            ? <ActivityIndicator color="#444" size="small" />
             : <><GoogleLogo size={24} /><Text style={styles.googleBtnText}>Continuer avec Google</Text></>}
         </TouchableOpacity>
 
@@ -161,13 +162,19 @@ export function LoginScreen({ navigation }: any) {
             autoCorrect={false} placeholderTextColor={GRAY_LT} />
         </View>
 
-        <View style={styles.inputWrap}>
-          <TextInput placeholder="Mot de passe" value={password}
+        <View style={[styles.inputWrap, { flexDirection: 'row', alignItems: 'center' }]}>
+          <TextInput
+            placeholder="Mot de passe" value={password}
             onChangeText={t => { setPassword(t); setError(''); }}
-            style={styles.input} secureTextEntry placeholderTextColor={GRAY_LT} />
+            style={[styles.input, { flex: 1 }]}
+            secureTextEntry={!showPassword}
+            placeholderTextColor={GRAY_LT}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(v => !v)} style={{ paddingHorizontal: 8 }}>
+            <Text style={{ color: GRAY_LT, fontSize: 13 }}>{showPassword ? 'Cacher' : 'Voir'}</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Mot de passe oublié — visible uniquement en mode login */}
         {mode === 'login' && (
           <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: 12, marginTop: -4 }}
             onPress={() => { setMode('forgot'); setError(''); setSuccess(''); }}>
@@ -194,6 +201,7 @@ export function LoginScreen({ navigation }: any) {
           onPress={() => navigation.navigate('Accueil')}>
           <Text style={{ color: GRAY, fontSize: 14 }}>Continuer sans compte →</Text>
         </TouchableOpacity>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );

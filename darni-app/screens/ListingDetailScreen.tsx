@@ -4,6 +4,7 @@ import {
   StyleSheet, Dimensions, Linking, FlatList,
   StatusBar, Share, Modal
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 const BLUE = '#1B4FD8';
@@ -53,6 +54,7 @@ function buildTel(raw: string | null): string {
 }
 
 export function ListingDetailScreen({ route, navigation }: any) {
+  const insets = useSafeAreaInsets();
   const { listing } = route.params;
   const photos = getPhotos(listing);
   const [currentPhoto, setCurrentPhoto] = useState(0);
@@ -96,6 +98,9 @@ export function ListingDetailScreen({ route, navigation }: any) {
     } catch (e) {}
   };
 
+  // Hauteur footer dynamique selon safe area
+  const footerPaddingBottom = Math.max(insets.bottom, 16);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -118,16 +123,17 @@ export function ListingDetailScreen({ route, navigation }: any) {
           )}
         />
 
-        {/* Gradient bas */}
         <View style={styles.galleryGradient} />
 
-        {/* Bouton retour */}
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+        {/* Bouton retour — respecte la status bar */}
+        <TouchableOpacity
+          style={[styles.backBtn, { top: insets.top + 8 }]}
+          onPress={() => navigation.goBack()}>
           <Text style={styles.backBtnText}>‹</Text>
         </TouchableOpacity>
 
-        {/* Actions haut droite */}
-        <View style={styles.topActions}>
+        {/* Actions haut droite — respecte la status bar */}
+        <View style={[styles.topActions, { top: insets.top + 8 }]}>
           <TouchableOpacity style={styles.actionBtn} onPress={onShare}>
             <Text style={styles.actionBtnText}>↗</Text>
           </TouchableOpacity>
@@ -138,7 +144,6 @@ export function ListingDetailScreen({ route, navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Pagination dots */}
         {photos.length > 1 && (
           <View style={styles.dots}>
             {photos.map((_, i) => (
@@ -147,7 +152,6 @@ export function ListingDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Counter */}
         {photos.length > 1 && (
           <View style={styles.photoCounter}>
             <Text style={styles.photoCounterText}>{currentPhoto + 1}/{photos.length}</Text>
@@ -155,18 +159,15 @@ export function ListingDetailScreen({ route, navigation }: any) {
         )}
       </View>
 
-      {/* CONTENU — Bottom sheet */}
+      {/* CONTENU */}
       <ScrollView
         style={styles.sheet}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}>
+        contentContainerStyle={{ paddingBottom: footerPaddingBottom + 80 }}>
 
-        {/* Handle */}
         <View style={styles.handle} />
 
-        {/* Prix + Badges */}
         <View style={styles.priceSection}>
-          {/* Badges */}
           <View style={styles.badges}>
             <View style={[styles.badge, { backgroundColor: listing.transaction === 'location' ? '#0369a1' : BLUE }]}>
               <Text style={styles.badgeText}>
@@ -183,23 +184,17 @@ export function ListingDetailScreen({ route, navigation }: any) {
             </View>
           </View>
 
-          {/* Prix */}
           <Text style={styles.price}>{smartPrice(listing.price, listing.transaction)}</Text>
           {listing.transaction === 'location' && (
             <Text style={styles.priceSub}>Loyer mensuel</Text>
           )}
-
-          {/* Titre */}
           {listing.title && <Text style={styles.title}>{listing.title}</Text>}
-
-          {/* Ref + Date */}
           <Text style={styles.refText}>
             Réf. #{refCode}
             {listing.created_at && ` · ${new Date(listing.created_at).toLocaleDateString('fr-DZ', { day: 'numeric', month: 'long', year: 'numeric' })}`}
           </Text>
         </View>
 
-        {/* Stats */}
         {stats.length > 0 && (
           <View style={styles.statsRow}>
             {stats.map((s, i) => (
@@ -211,13 +206,11 @@ export function ListingDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Localisation */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Localisation</Text>
           <Text style={styles.cardText}>{location}</Text>
         </View>
 
-        {/* Description */}
         {listing.description && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Description</Text>
@@ -236,7 +229,6 @@ export function ListingDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Équipements */}
         {amenities.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Équipements</Text>
@@ -251,7 +243,6 @@ export function ListingDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Informations */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Informations du bien</Text>
           {infoRows.map((row, i) => (
@@ -262,7 +253,6 @@ export function ListingDetailScreen({ route, navigation }: any) {
           ))}
         </View>
 
-        {/* Agent card */}
         <View style={styles.agentCard}>
           <View style={styles.agentHeader}>
             <View style={styles.agentAvatar}>
@@ -282,15 +272,14 @@ export function ListingDetailScreen({ route, navigation }: any) {
           </View>
         </View>
 
-        {/* Signaler */}
         <TouchableOpacity style={styles.reportBtn}>
           <Text style={styles.reportBtnText}>Signaler cette annonce</Text>
         </TouchableOpacity>
 
       </ScrollView>
 
-      {/* CTA FIXE BAS */}
-      <View style={styles.footer}>
+      {/* CTA FIXE BAS — safe area dynamique */}
+      <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
         <TouchableOpacity style={styles.emailBtn}
           onPress={() => Linking.openURL('mailto:contact@darni.app')}>
           <Text style={styles.emailBtnText}>Email</Text>
@@ -308,7 +297,7 @@ export function ListingDetailScreen({ route, navigation }: any) {
       {/* MODAL GALERIE FULLSCREEN */}
       <Modal visible={showGallery} animationType="fade" statusBarTranslucent>
         <View style={styles.galleryModal}>
-          <View style={styles.galleryModalHeader}>
+          <View style={[styles.galleryModalHeader, { paddingTop: insets.top + 12 }]}>
             <Text style={styles.galleryModalCount}>{currentPhoto + 1} / {photos.length}</Text>
             <TouchableOpacity onPress={() => setShowGallery(false)}
               style={styles.galleryModalClose}>
@@ -334,7 +323,6 @@ export function ListingDetailScreen({ route, navigation }: any) {
             )}
           />
 
-          {/* Thumbnails bas */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.galleryThumbs}>
             {photos.map((p, i) => (
@@ -352,13 +340,12 @@ export function ListingDetailScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
 
-  // Galerie
   galleryContainer: { height: height * 0.45, position: 'relative' },
   galleryPhoto: { width, height: height * 0.45 },
   galleryGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 100, backgroundColor: 'rgba(0,0,0,0.12)' },
-  backBtn: { position: 'absolute', top: 52, left: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
+  backBtn: { position: 'absolute', left: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
   backBtnText: { color: '#fff', fontSize: 28, fontWeight: '300', lineHeight: 34 },
-  topActions: { position: 'absolute', top: 52, right: 16, flexDirection: 'row', gap: 8 },
+  topActions: { position: 'absolute', right: 16, flexDirection: 'row', gap: 8 },
   actionBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
   actionBtnSaved: { backgroundColor: 'rgba(239,68,68,0.8)' },
   actionBtnText: { color: '#fff', fontSize: 18 },
@@ -368,11 +355,9 @@ const styles = StyleSheet.create({
   photoCounter: { position: 'absolute', bottom: 14, right: 16, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   photoCounterText: { color: '#fff', fontSize: 12, fontWeight: '600' },
 
-  // Sheet
   sheet: { flex: 1, backgroundColor: '#fff', marginTop: -20, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
   handle: { width: 40, height: 4, backgroundColor: BORDER, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 16 },
 
-  // Prix
   priceSection: { paddingHorizontal: 16, marginBottom: 16 },
   badges: { flexDirection: 'row', gap: 6, marginBottom: 12, flexWrap: 'wrap' },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5 },
@@ -382,30 +367,25 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: '700', color: DARK, lineHeight: 26, marginBottom: 8 },
   refText: { fontSize: 12, color: GRAY_LT },
 
-  // Stats
   statsRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 16, backgroundColor: BG, borderRadius: 14, padding: 4, borderWidth: 1, borderColor: BORDER },
   statItem: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRightWidth: 1, borderRightColor: BORDER },
   statVal: { fontSize: 18, fontWeight: '900', color: DARK },
   statLabel: { fontSize: 11, color: GRAY_LT, marginTop: 2 },
 
-  // Cards
   card: { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#fff', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: BORDER },
   cardTitle: { fontSize: 15, fontWeight: '700', color: DARK, marginBottom: 10 },
   cardText: { fontSize: 14, color: '#4B5563', lineHeight: 22 },
 
-  // Amenities
   amenitiesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   amenityItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: BG, borderRadius: 8, borderWidth: 1, borderColor: BORDER },
   amenityCheck: { fontSize: 12, color: BLUE, fontWeight: '700' },
   amenityText: { fontSize: 13, color: '#374151' },
 
-  // Info rows
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
   infoRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F9FAFB' },
   infoLabel: { fontSize: 14, color: GRAY_LT },
   infoValue: { fontSize: 14, fontWeight: '600', color: DARK },
 
-  // Agent
   agentCard: { marginHorizontal: 16, marginBottom: 12, backgroundColor: BG, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: BORDER },
   agentHeader: { flexDirection: 'row', alignItems: 'center' },
   agentAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: BLUE, justifyContent: 'center', alignItems: 'center' },
@@ -415,12 +395,10 @@ const styles = StyleSheet.create({
   agentBadge: { backgroundColor: '#E8F8F0', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5 },
   agentBadgeText: { fontSize: 11, fontWeight: '700', color: '#065F46' },
 
-  // Report
   reportBtn: { marginHorizontal: 16, marginBottom: 8, padding: 14, alignItems: 'center' },
   reportBtnText: { fontSize: 13, color: GRAY_LT },
 
-  // Footer
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 12, paddingBottom: 28, flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: BORDER },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', paddingHorizontal: 16, paddingTop: 12, flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: BORDER },
   emailBtn: { flex: 1, backgroundColor: BG, borderRadius: 10, paddingVertical: 13, alignItems: 'center', borderWidth: 1, borderColor: BORDER },
   emailBtnText: { fontSize: 13, fontWeight: '600', color: '#374151' },
   callBtn: { flex: 1, backgroundColor: BLUE, borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
@@ -428,9 +406,8 @@ const styles = StyleSheet.create({
   waBtn: { flex: 1, backgroundColor: '#F0FDF4', borderRadius: 10, paddingVertical: 13, alignItems: 'center', borderWidth: 1, borderColor: '#86EFAC' },
   waBtnText: { fontSize: 13, fontWeight: '700', color: '#16A34A' },
 
-  // Modal galerie
   galleryModal: { flex: 1, backgroundColor: '#000' },
-  galleryModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingTop: 52 },
+  galleryModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 8 },
   galleryModalCount: { color: '#fff', fontSize: 14, fontWeight: '600' },
   galleryModalClose: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
   galleryThumbs: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
