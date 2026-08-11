@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, Alert, ActivityIndicator, StatusBar,
-  Dimensions, Platform, SafeAreaView
+  Dimensions,
 } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,7 +55,6 @@ function PaywallScreen({ used, navigation }: { used: number; navigation: any }) 
         contentContainerStyle={[styles.paywallContainer, { paddingTop: insets.top + 20 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Icône */}
         <View style={styles.paywallIcon}>
           <Text style={{ fontSize: 36 }}>⊕</Text>
         </View>
@@ -66,7 +65,6 @@ function PaywallScreen({ used, navigation }: { used: number; navigation: any }) 
           Passez à Darni Pro pour continuer à publier sans limite.
         </Text>
 
-        {/* Barre de progression */}
         <View style={styles.progressBarWrap}>
           <View style={styles.progressBarBg}>
             <View style={[styles.progressBarFill, { width: `${Math.min((used / MAX_FREE) * 100, 100)}%` }]} />
@@ -74,9 +72,8 @@ function PaywallScreen({ used, navigation }: { used: number; navigation: any }) 
           <Text style={styles.progressText}>{used}/{MAX_FREE} annonces</Text>
         </View>
 
-        {/* Plan Pro DZ */}
         <TouchableOpacity style={styles.proCard} activeOpacity={0.88}
-          onPress={() => Alert.alert('Darni Pro', 'Le paiement Chargily (DA) arrive très bientôt. Vous serez notifié dès son activation.')}>
+          onPress={() => Alert.alert('Darni Pro', 'Le paiement Chargily (DA) arrive très bientôt.')}>
           <View style={styles.proCardHeader}>
             <View style={styles.proBadge}><Text style={styles.proBadgeText}>POPULAIRE</Text></View>
             <Text style={styles.proCardTitle}>Darni Pro Algérie</Text>
@@ -104,9 +101,8 @@ function PaywallScreen({ used, navigation }: { used: number; navigation: any }) 
           </View>
         </TouchableOpacity>
 
-        {/* Plan Pro Diaspora */}
         <TouchableOpacity style={styles.proCardAlt} activeOpacity={0.88}
-          onPress={() => Alert.alert('Darni Pro International', 'Le paiement Stripe (€) arrive très bientôt. Vous serez notifié dès son activation.')}>
+          onPress={() => Alert.alert('Darni Pro International', 'Le paiement Stripe (€) arrive très bientôt.')}>
           <View>
             <Text style={styles.proCardAltTitle}>Darni Pro Diaspora</Text>
             <Text style={styles.proCardAltSub}>Pour les Algériens à l'étranger</Text>
@@ -117,7 +113,6 @@ function PaywallScreen({ used, navigation }: { used: number; navigation: any }) 
           </View>
         </TouchableOpacity>
 
-        {/* Retour */}
         <TouchableOpacity style={styles.backFreeBtn}
           onPress={() => navigation.navigate('Accueil')}>
           <Text style={styles.backFreeBtnText}>Continuer sans abonnement</Text>
@@ -160,11 +155,11 @@ function LoginRequiredScreen({ navigation }: { navigation: any }) {
 ───────────────────────────────────────────── */
 export function PostScreen({ navigation }: any) {
   const insets  = useSafeAreaInsets();
-  const [authReady,   setAuthReady]   = useState(false);
-  const [user,        setUser]        = useState<any>(null);
-  const [listingCount,setListingCount]= useState(0);
-  const [step,        setStep]        = useState(0);
-  const [loading,     setLoading]     = useState(false);
+  const [authReady,    setAuthReady]    = useState(false);
+  const [user,         setUser]         = useState<any>(null);
+  const [listingCount, setListingCount] = useState(0);
+  const [step,         setStep]         = useState(0);
+  const [loading,      setLoading]      = useState(false);
   const [form, setForm] = useState({
     transaction: 'vente', type: '', title: '', description: '',
     price: '', surface: '', bedrooms: '', rooms: '',
@@ -174,7 +169,6 @@ export function PostScreen({ navigation }: any) {
 
   const update = (key: string, val: any) => setForm(f => ({ ...f, [key]: val }));
 
-  /* Vérifier auth + compter annonces */
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       const u = data.user ?? null;
@@ -190,7 +184,6 @@ export function PostScreen({ navigation }: any) {
     });
   }, []);
 
-  /* Recompte quand on revient sur l'écran */
   useEffect(() => {
     const unsubscribe = navigation?.addListener?.('focus', async () => {
       const { data } = await supabase.auth.getUser();
@@ -234,7 +227,7 @@ export function PostScreen({ navigation }: any) {
       phone:        form.phone,
       whatsapp:     form.whatsapp || form.phone,
       status:       'active',
-      user_id:      user?.id ?? null,   // ← lié au compte
+      user_id:      user?.id ?? null,
     }]);
     setLoading(false);
     if (error) { Alert.alert('Erreur', error.message); return; }
@@ -247,7 +240,6 @@ export function PostScreen({ navigation }: any) {
     ]);
   };
 
-  /* ── États de chargement / garde ── */
   if (!authReady) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -264,47 +256,44 @@ export function PostScreen({ navigation }: any) {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {/* HEADER */}
-      <SafeAreaView style={{ backgroundColor: '#fff' }}>
-        <View style={[styles.header, { paddingTop: insets.top > 0 ? 8 : 16 }]}>
-          <View style={styles.headerTop}>
-            <Text style={styles.headerTitle}>Publier une annonce</Text>
-            {/* Compteur annonces restantes */}
-            <View style={[
-              styles.quotaBadge,
-              listingCount >= MAX_FREE - 1 && { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }
+      {/* HEADER — fix SafeAreaView Samsung */}
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.headerTop}>
+          <Text style={styles.headerTitle}>Publier une annonce</Text>
+          <View style={[
+            styles.quotaBadge,
+            listingCount >= MAX_FREE - 1 && { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }
+          ]}>
+            <Text style={[
+              styles.quotaText,
+              listingCount >= MAX_FREE - 1 && { color: '#EF4444' }
             ]}>
-              <Text style={[
-                styles.quotaText,
-                listingCount >= MAX_FREE - 1 && { color: '#EF4444' }
-              ]}>
-                {MAX_FREE - listingCount} gratuite{MAX_FREE - listingCount > 1 ? 's' : ''} restante{MAX_FREE - listingCount > 1 ? 's' : ''}
-              </Text>
-            </View>
-          </View>
-          <Text style={styles.headerSub}>Gratuit · Rapide · Efficace</Text>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${((step + 1) / 3) * 100}%` }]} />
-          </View>
-          <View style={styles.stepsRow}>
-            {STEPS.map((s, i) => (
-              <View key={s} style={styles.stepItem}>
-                <View style={[styles.stepCircle, i < step && styles.stepDone, i === step && styles.stepActive]}>
-                  <Text style={[styles.stepNum, i <= step && styles.stepNumActive]}>
-                    {i < step ? '✓' : i + 1}
-                  </Text>
-                </View>
-                <Text style={[styles.stepLabel, i === step && styles.stepLabelActive]}>{s}</Text>
-              </View>
-            ))}
+              {MAX_FREE - listingCount} gratuite{MAX_FREE - listingCount > 1 ? 's' : ''} restante{MAX_FREE - listingCount > 1 ? 's' : ''}
+            </Text>
           </View>
         </View>
-      </SafeAreaView>
+        <Text style={styles.headerSub}>Gratuit · Rapide · Efficace</Text>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${((step + 1) / 3) * 100}%` }]} />
+        </View>
+        <View style={styles.stepsRow}>
+          {STEPS.map((s, i) => (
+            <View key={s} style={styles.stepItem}>
+              <View style={[styles.stepCircle, i < step && styles.stepDone, i === step && styles.stepActive]}>
+                <Text style={[styles.stepNum, i <= step && styles.stepNumActive]}>
+                  {i < step ? '✓' : i + 1}
+                </Text>
+              </View>
+              <Text style={[styles.stepLabel, i === step && styles.stepLabelActive]}>{s}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
 
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
 
-        {/* ÉTAPE 1 — Type + Wilaya */}
+        {/* ÉTAPE 1 */}
         {step === 0 && (
           <View style={styles.stepContent}>
             <Text style={styles.sectionLabel}>Transaction</Text>
@@ -373,7 +362,7 @@ export function PostScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* ÉTAPE 2 — Détails */}
+        {/* ÉTAPE 2 */}
         {step === 1 && (
           <View style={styles.stepContent}>
             <Text style={styles.sectionLabel}>Titre de l'annonce</Text>
@@ -415,7 +404,7 @@ export function PostScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* ÉTAPE 3 — Contact */}
+        {/* ÉTAPE 3 */}
         {step === 2 && (
           <View style={styles.stepContent}>
             <Text style={styles.sectionLabel}>Téléphone *</Text>
@@ -445,7 +434,6 @@ export function PostScreen({ navigation }: any) {
               ))}
             </View>
 
-            {/* Avertissement si proche de la limite */}
             {listingCount === MAX_FREE - 1 && (
               <View style={styles.warningBox}>
                 <Text style={styles.warningText}>
@@ -484,11 +472,9 @@ export function PostScreen({ navigation }: any) {
   );
 }
 
-/* ─────────────────── Styles ─────────────────── */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
 
-  /* Header */
   header:       { backgroundColor: '#fff', paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: BORDER },
   headerTop:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 },
   headerTitle:  { fontSize: 18, fontWeight: '800', color: DARK },
@@ -517,10 +503,10 @@ const styles = StyleSheet.create({
   transLabel:      { fontSize: 14, fontWeight: '600', color: GRAY },
   transLabelActive:{ color: BLUE },
 
-  typeGrid:         { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
-  typeChip:         { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: BORDER, backgroundColor: '#fff' },
-  typeChipActive:   { borderColor: BLUE, backgroundColor: '#EEF2FF' },
-  typeChipText:     { fontSize: 12, fontWeight: '500', color: GRAY },
+  typeGrid:          { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
+  typeChip:          { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: BORDER, backgroundColor: '#fff' },
+  typeChipActive:    { borderColor: BLUE, backgroundColor: '#EEF2FF' },
+  typeChipText:      { fontSize: 12, fontWeight: '500', color: GRAY },
   typeChipTextActive:{ color: BLUE, fontWeight: '700' },
 
   wilayaGrid:          { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
@@ -553,7 +539,6 @@ const styles = StyleSheet.create({
   nextBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
   submitBtn:   { flex: 2, backgroundColor: BLUE, borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
 
-  /* Paywall */
   paywallContainer: { paddingHorizontal: 24, paddingBottom: 60, alignItems: 'center' },
   paywallIcon:      { width: 80, height: 80, borderRadius: 40, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
   paywallTitle:     { fontSize: 26, fontWeight: '900', color: DARK, marginBottom: 12, textAlign: 'center' },
@@ -589,7 +574,6 @@ const styles = StyleSheet.create({
   backFreeBtnText: { color: GRAY, fontSize: 14, fontWeight: '600' },
   paywallNote:     { fontSize: 11, color: GRAY_LT, textAlign: 'center' },
 
-  /* Login requis */
   loginRequired: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 24, alignItems: 'center' },
   loginTitle:    { fontSize: 22, fontWeight: '800', color: DARK, marginBottom: 12, textAlign: 'center' },
   loginSub:      { fontSize: 15, color: GRAY, textAlign: 'center', lineHeight: 22, marginBottom: 32 },
