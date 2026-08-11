@@ -8,25 +8,41 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { Text, View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Linking from 'expo-linking';
 
-import { HomeScreen }          from './screens/HomeScreen';
-import { SearchScreen }        from './screens/SearchScreen';
-import { PostScreen }          from './screens/PostScreen';
-import { ListingDetailScreen } from './screens/ListingDetailScreen';
-import { AgentsScreen }        from './screens/AgentsScreen';
-import { AgentProfileScreen }  from './screens/AgentProfileScreen';
-import { LoginScreen }         from './screens/LoginScreen';
-import { ProfileScreen }       from './screens/ProfileScreen';
-import { MoreScreen }          from './screens/MoreScreen';
-import { MapScreen }           from './screens/MapScreen';
-import { AboutScreen }         from './screens/AboutScreen';
-import { supabase }            from './lib/supabase';
+import { HomeScreen }           from './screens/HomeScreen';
+import { SearchScreen }         from './screens/SearchScreen';
+import { PostScreen }           from './screens/PostScreen';
+import { ListingDetailScreen }  from './screens/ListingDetailScreen';
+import { AgentsScreen }         from './screens/AgentsScreen';
+import { AgentProfileScreen }   from './screens/AgentProfileScreen';
+import { LoginScreen }          from './screens/LoginScreen';
+import { ProfileScreen }        from './screens/ProfileScreen';
+import { MoreScreen }           from './screens/MoreScreen';
+import { MapScreen }            from './screens/MapScreen';
+import { AboutScreen }          from './screens/AboutScreen';
+import { ResetPasswordScreen }  from './screens/ResetPasswordScreen';
+import { supabase }             from './lib/supabase';
 
 const Tab   = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 const BLUE  = '#1B4FD8';
 const GRAY  = '#9CA3AF';
 
+// ── Deep linking config ──────────────────────────────────────────────────────
+const prefix = Linking.createURL('/');
+
+const linking = {
+  prefixes: ['darni://', prefix],
+  config: {
+    screens: {
+      ResetPassword: 'reset-password',
+      Main: '*',
+    },
+  },
+} as any;
+
+// ── Icônes ───────────────────────────────────────────────────────────────────
 function PersonIcon({ color }: { color: string }) {
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', height: 24 }}>
@@ -65,6 +81,7 @@ function TabIcon({ label, active }: { label: string; active: boolean }) {
   );
 }
 
+// ── Onglet Connexion / Profil ─────────────────────────────────────────────────
 function ConnexionTab(props: any) {
   const [user,  setUser]  = React.useState<any>(null);
   const [ready, setReady] = React.useState(false);
@@ -88,6 +105,7 @@ function ConnexionTab(props: any) {
   return user ? <ProfileScreen {...props} /> : <LoginScreen {...props} />;
 }
 
+// ── Tab Navigator ─────────────────────────────────────────────────────────────
 function TabNavigator() {
   const insets = useSafeAreaInsets();
   return (
@@ -118,13 +136,15 @@ function TabNavigator() {
   );
 }
 
+// ── App principale ────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <StatusBar style="auto" />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main"          component={TabNavigator}        />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           <Stack.Screen name="ListingDetail" component={ListingDetailScreen} />
           <Stack.Screen name="Agences"       component={AgentsScreen}        />
           <Stack.Screen name="AgentProfile"  component={AgentProfileScreen}  />
