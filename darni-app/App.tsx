@@ -6,7 +6,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { Text, View, ActivityIndicator } from 'react-native';
+import { Text, View, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 
@@ -41,6 +41,33 @@ const linking = {
     },
   },
 } as any;
+
+// ── Splash Screen ─────────────────────────────────────────────────────────────
+function SplashScreen() {
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.delay(1800),
+      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: BLUE, justifyContent: 'center', alignItems: 'center' }}>
+      <StatusBar style="light" />
+      <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
+        <Text style={{ fontSize: 52, fontWeight: '900', color: '#fff', letterSpacing: -2 }}>
+          darni
+        </Text>
+        <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)', marginTop: 8, letterSpacing: 1 }}>
+          Immobilier Algérie
+        </Text>
+      </Animated.View>
+    </View>
+  );
+}
 
 // ── Icônes ───────────────────────────────────────────────────────────────────
 function PersonIcon({ color }: { color: string }) {
@@ -138,6 +165,15 @@ function TabNavigator() {
 
 // ── App principale ────────────────────────────────────────────────────────────
 export default function App() {
+  const [showSplash, setShowSplash] = React.useState(true);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplash) return <SplashScreen />;
+
   return (
     <SafeAreaProvider>
       <NavigationContainer linking={linking}>
