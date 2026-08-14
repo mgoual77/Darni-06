@@ -49,8 +49,8 @@ function stableOffset(id: string, axis: 'lat' | 'lng'): number {
 }
 
 function getCoords(listing: any): { latitude: number; longitude: number } {
-  if (listing.latitude && listing.longitude) {
-    return { latitude: Number(listing.latitude), longitude: Number(listing.longitude) };
+  if (listing.lat && listing.lng) {
+    return { latitude: Number(listing.lat), longitude: Number(listing.lng) };
   }
   const w = normalizeStr(listing.wilaya ?? 'alger');
   const key = Object.keys(WILAYA_COORDS).find(k => w.startsWith(k) || w.includes(k));
