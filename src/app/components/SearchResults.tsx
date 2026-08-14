@@ -69,6 +69,7 @@ export function SearchResults() {
   const [listings, setListings]     = useState<any[]>([]);
   const [verifiedUserIds, setVerifiedUserIds] = useState<Set<string>>(new Set());
   const [loading, setLoading]       = useState(true);
+  const [loadError, setLoadError]   = useState(false);
   const [sortBy, setSortBy]         = useState<SortOption>('recent');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showFilters, setShowFilters]   = useState(false);
@@ -117,21 +118,21 @@ export function SearchResults() {
   });
   if (searchText) activeChips.push({ label: `"${searchText}"`, onRemove: () => setSearchText('') });
 
-  useEffect(() => {
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase.from('listings').select('*').eq('status', 'active').order('created_at', { ascending: false });
-        if (error) console.error(error);
-        else {
-          setListings(data ?? []);
-          fetchVerifiedUserIds((data ?? []).map((l: any) => l.user_id)).then(setVerifiedUserIds);
-        }
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
-    };
-    fetch();
-  }, []);
+  const fetchListings = async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const { data, error } = await supabase.from('listings').select('*').eq('status', 'active').order('created_at', { ascending: false });
+      if (error) { console.error(error); setLoadError(true); }
+      else {
+        setListings(data ?? []);
+        fetchVerifiedUserIds((data ?? []).map((l: any) => l.user_id)).then(setVerifiedUserIds);
+      }
+    } catch (e) { console.error(e); setLoadError(true); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchListings(); }, []);
 
   let filtered = listings;
   if (filterTransaction) filtered = filtered.filter(l => l.transaction?.toLowerCase() === filterTransaction.toLowerCase());
@@ -346,6 +347,13 @@ export function SearchResults() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {loading ? (
             [...Array(3)].map((_, i) => <div key={i} style={{ height: 180, background: '#F3F4F6', borderRadius: 12 }} />)
+          ) : loadError ? (
+            <div style={{ textAlign: 'center', padding: '48px 24px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12 }}>
+              <p style={{ fontSize: '1.4rem', color: '#991B1B', marginBottom: 14 }}>Impossible de charger les annonces. Vérifiez votre connexion.</p>
+              <button onClick={fetchListings} style={{ padding: '9px 20px', background: '#fff', border: '1px solid #FECACA', borderRadius: 8, color: '#991B1B', fontWeight: 700, cursor: 'pointer' }}>
+                Réessayer
+              </button>
+            </div>
           ) : sorted.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0', color: '#9CA3AF' }}>
               <Search style={{ width: 36, height: 36, margin: '0 auto 12px', opacity: 0.3 }} />

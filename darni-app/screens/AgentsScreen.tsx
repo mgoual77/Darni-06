@@ -28,11 +28,14 @@ export function AgentsScreen({ navigation }: any) {
   const [search,    setSearch]    = useState('');
   const [agents,    setAgents]    = useState<AgentRow[]>([]);
   const [loading,   setLoading]   = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
     async function loadAgents() {
       setLoading(true);
+      setLoadError('');
       // Profils qui possèdent au moins une annonce, avec le compte d'annonces
       // et la wilaya la plus fréquente de leurs biens.
       const { data, error } = await supabase
@@ -44,6 +47,7 @@ export function AgentsScreen({ navigation }: any) {
       if (error) {
         console.error('Erreur chargement agents:', error.message);
         setAgents([]);
+        setLoadError("Impossible de charger les agents. Vérifiez votre connexion.");
         setLoading(false);
         return;
       }
@@ -72,7 +76,7 @@ export function AgentsScreen({ navigation }: any) {
     }
     loadAgents();
     return () => { isMounted = false; };
-  }, []);
+  }, [reloadKey]);
 
   // Regroupement par agence — pas encore de vraie notion "agence" en base,
   // donc chaque agent verifié agit comme sa propre fiche pour l'instant.
@@ -121,7 +125,15 @@ export function AgentsScreen({ navigation }: any) {
             <ActivityIndicator color={BLUE} />
           </View>
         )}
-        {!loading && activeTab === 'agents'
+        {!loading && loadError !== '' && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{loadError}</Text>
+            <TouchableOpacity onPress={() => setReloadKey(k => k + 1)} style={styles.retryBtn}>
+              <Text style={styles.retryText}>Réessayer</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {!loading && loadError === '' && activeTab === 'agents'
           ? filteredAgents.map(agent => (
               <TouchableOpacity key={agent.id} style={styles.card} onPress={() => goToProfile(agent)}>
                 <View style={[styles.avatar, { backgroundColor: agent.color }]}>
@@ -156,7 +168,7 @@ export function AgentsScreen({ navigation }: any) {
               </TouchableOpacity>
             ))
         }
-        {!loading && (activeTab === 'agents' ? filteredAgents : filteredAgencies).length === 0 && (
+        {!loading && loadError === '' && (activeTab === 'agents' ? filteredAgents : filteredAgencies).length === 0 && (
           <Text style={{ textAlign: 'center', color: GRAY_LT, marginTop: 40, fontSize: 14 }}>
             {search ? `Aucun résultat pour "${search}"` : 'Aucun agent pour le moment'}
           </Text>
@@ -167,6 +179,10 @@ export function AgentsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  errorBox:         { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, padding: 16, alignItems: 'center', gap: 10 },
+  errorText:        { fontSize: 13, color: '#991B1B', textAlign: 'center' },
+  retryBtn:         { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#FECACA' },
+  retryText:        { fontSize: 13, fontWeight: '700', color: '#991B1B' },
   header:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: BORDER },
   backBtn:          { width: 36, height: 36, justifyContent: 'center' },
   headerTitle:      { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '700', color: DARK },

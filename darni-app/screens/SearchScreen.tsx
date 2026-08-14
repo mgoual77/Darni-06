@@ -67,6 +67,7 @@ export function SearchScreen({ route, navigation }: any) {
 
   const [listings,          setListings]          = useState<any[]>([]);
   const [loading,           setLoading]           = useState(true);
+  const [loadError,         setLoadError]         = useState('');
   const [searchText,        setSearchText]        = useState(route?.params?.q ?? '');
   const [filterTransaction, setFilterTransaction] = useState(route?.params?.type ?? '');
   const [filterType,        setFilterType]        = useState('');
@@ -85,14 +86,19 @@ export function SearchScreen({ route, navigation }: any) {
   const [tmpPriceMin,    setTmpPriceMin]    = useState('');
   const [tmpPriceMax,    setTmpPriceMax]    = useState('');
 
-  useEffect(() => {
+  const loadListings = () => {
+    setLoading(true);
+    setLoadError('');
     supabase.from('listings').select('*').order('created_at', { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) { setLoadError("Impossible de charger les annonces. Vérifiez votre connexion."); setLoading(false); return; }
         setListings(data ?? []);
         setLoading(false);
         fetchVerifiedUserIds((data ?? []).map((l: any) => l.user_id)).then(setVerifiedUserIds);
       });
-  }, []);
+  };
+
+  useEffect(() => { loadListings(); }, []);
 
   let filtered = listings;
   if (filterTransaction) filtered = filtered.filter(l => l.transaction?.toLowerCase() === filterTransaction);
@@ -266,6 +272,13 @@ export function SearchScreen({ route, navigation }: any) {
       {/* LISTE */}
       {loading ? (
         <ActivityIndicator color={BLUE} size="large" style={{ marginTop: 40 }} />
+      ) : loadError !== '' ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{loadError}</Text>
+          <TouchableOpacity onPress={loadListings} style={styles.retryBtn}>
+            <Text style={styles.retryText}>Réessayer</Text>
+          </TouchableOpacity>
+        </View>
       ) : sorted.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>Aucune annonce trouvée</Text>
@@ -518,6 +531,10 @@ const styles = StyleSheet.create({
   darniProText: { fontSize: 11, color: GRAY_LT, fontWeight: '500' },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
+  errorBox:  { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, padding: 16, alignItems: 'center', gap: 10, marginTop: 20, marginHorizontal: 16 },
+  errorText: { fontSize: 13, color: '#991B1B', textAlign: 'center' },
+  retryBtn:  { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#FECACA' },
+  retryText: { fontSize: 13, fontWeight: '700', color: '#991B1B' },
   emptyTitle: { fontSize: 18, fontWeight: '600', color: '#374151', marginBottom: 12 },
   emptyBtn: { paddingHorizontal: 22, paddingVertical: 10, backgroundColor: BLUE, borderRadius: 10 },
   emptyBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },

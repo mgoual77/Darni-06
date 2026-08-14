@@ -82,18 +82,26 @@ export function MapScreen({ navigation, route }: any) {
 
   const [listings,     setListings]     = useState<any[]>(route?.params?.listings ?? []);
   const [loading,      setLoading]      = useState(listings.length === 0);
+  const [loadError,    setLoadError]    = useState('');
   const [selected,     setSelected]     = useState<any>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'vente' | 'location'>('all');
+  const [reloadKey,    setReloadKey]    = useState(0);
 
   useEffect(() => {
     if (listings.length > 0) { setLoading(false); return; }
+    setLoading(true);
+    setLoadError('');
     supabase.from('listings').select('*').order('created_at', { ascending: false })
       .then(({ data, error }) => {
-        if (error) console.error('MapScreen fetch error:', error);
-        setListings(data ?? []);
+        if (error) {
+          console.error('MapScreen fetch error:', error);
+          setLoadError("Impossible de charger les biens sur la carte. Vérifiez votre connexion.");
+        } else {
+          setListings(data ?? []);
+        }
         setLoading(false);
       });
-  }, []);
+  }, [reloadKey]);
 
   const filtered = listings.filter(l =>
     activeFilter === 'all' || l.transaction === activeFilter
@@ -136,6 +144,14 @@ export function MapScreen({ navigation, route }: any) {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator color={BLUE} size="large" />
           <Text style={{ color: GRAY, marginTop: 12, fontSize: 14 }}>Chargement des biens...</Text>
+        </View>
+      ) : loadError !== '' ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
+          <Text style={{ color: '#991B1B', fontSize: 14, textAlign: 'center', marginBottom: 14 }}>{loadError}</Text>
+          <TouchableOpacity onPress={() => setReloadKey(k => k + 1)}
+            style={{ paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#FECACA' }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#991B1B' }}>Réessayer</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <MapView

@@ -47,18 +47,27 @@ export function HomeScreen({ navigation }: any) {
 
   const [listings,      setListings]      = useState<any[]>([]);
   const [loading,       setLoading]       = useState(true);
+  const [loadError,     setLoadError]     = useState('');
   const [selectedPlace, setSelectedPlace] = useState('');
   const [searchType,    setSearchType]    = useState<'vente' | 'location'>('vente');
   const [activeWilaya,  setActiveWilaya]  = useState('Alger');
   const [heroTab,       setHeroTab]       = useState('Propriétés');
 
-  useEffect(() => {
+  const loadListings = () => {
+    setLoading(true);
+    setLoadError('');
     supabase
       .from('listings')
       .select('*')
       .order('created_at', { ascending: false })
-      .then(({ data }) => { setListings(data ?? []); setLoading(false); });
-  }, []);
+      .then(({ data, error }) => {
+        if (error) setLoadError("Impossible de charger les annonces. Vérifiez votre connexion.");
+        else setListings(data ?? []);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => { loadListings(); }, []);
 
   const byWilaya = listings
     .filter(l => l.wilaya?.toLowerCase().includes(activeWilaya.toLowerCase()))
@@ -210,6 +219,13 @@ export function HomeScreen({ navigation }: any) {
             </ScrollView>
             {loading ? (
               <ActivityIndicator color={BLUE} size="large" style={{ marginTop: 20 }} />
+            ) : loadError !== '' ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{loadError}</Text>
+                <TouchableOpacity onPress={loadListings} style={styles.retryBtn}>
+                  <Text style={styles.retryText}>Réessayer</Text>
+                </TouchableOpacity>
+              </View>
             ) : byWilaya.length === 0 ? (
               <Text style={styles.emptyText}>Aucun bien à {activeWilaya} pour le moment.</Text>
             ) : (
@@ -346,6 +362,10 @@ const styles = StyleSheet.create({
   gridLocation:  { fontSize: 11, color: GRAY_LT, marginBottom: 3 },
   gridSpecs:     { fontSize: 11, color: GRAY },
   emptyText:     { textAlign: 'center', color: GRAY_LT, fontSize: 14, marginTop: 20 },
+  errorBox:      { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, padding: 16, alignItems: 'center', gap: 10, marginTop: 16, marginHorizontal: 16 },
+  errorText:     { fontSize: 13, color: '#991B1B', textAlign: 'center' },
+  retryBtn:      { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#FECACA' },
+  retryText:     { fontSize: 13, fontWeight: '700', color: '#991B1B' },
 
   seeAllBtn:     { marginTop: 16, borderWidth: 1.5, borderColor: BLUE, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
   seeAllBtnText: { color: BLUE, fontSize: 14, fontWeight: '700' },

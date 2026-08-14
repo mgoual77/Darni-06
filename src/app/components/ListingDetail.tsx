@@ -145,6 +145,7 @@ export default function ListingDetail() {
   const [saved, setSaved]               = useState(false)
   const [sellerVerified, setSellerVerified] = useState(false)
   const [sellerName, setSellerName]     = useState('Vendeur Darni')
+  const [fetchError, setFetchError]     = useState(false)
 
   // ── Fetch listing + SEO dynamique ────────────────────────────────────────
   useEffect(() => {
@@ -152,8 +153,11 @@ export default function ListingDetail() {
     setLoading(true)
     const prevTitle = document.title
 
+    setFetchError(false)
     supabase.from('listings').select('*').eq('id', id).single()
       .then(({ data, error }) => {
+        // PGRST116 = 0 ligne trouvée (annonce inexistante) ; toute autre erreur = vrai souci réseau/serveur
+        if (error && error.code !== 'PGRST116') setFetchError(true)
         if (!error && data) {
           setListing(data)
           fetchVerifiedUserIds([data.user_id]).then(ids => setSellerVerified(ids.has(data.user_id)))
@@ -204,7 +208,9 @@ export default function ListingDetail() {
   if (!listing) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BG }}>
       <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: 22, fontWeight: 700, color: DARK, marginBottom: 12 }}>Annonce introuvable</p>
+        <p style={{ fontSize: 22, fontWeight: 700, color: DARK, marginBottom: 12 }}>
+          {fetchError ? 'Impossible de charger cette annonce. Vérifiez votre connexion.' : 'Annonce introuvable'}
+        </p>
         <button onClick={() => navigate('/')} style={{ padding: '10px 24px', background: BLUE, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>
           Retour à l'accueil
         </button>

@@ -63,6 +63,7 @@ export function ProfileScreen({ navigation }: any) {
   const insets     = useSafeAreaInsets();
   const [user,     setUser]     = useState<any>(null);
   const [nbListings, setNbListings] = useState(0);
+  const [statsError, setStatsError] = useState(false);
   const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
@@ -73,7 +74,10 @@ export function ProfileScreen({ navigation }: any) {
           .from('listings')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', data.user.id)
-          .then(({ count }) => setNbListings(count ?? 0));
+          .then(({ count, error }) => {
+            if (error) setStatsError(true);
+            else setNbListings(count ?? 0);
+          });
       }
       setLoading(false);
     });
@@ -123,24 +127,30 @@ export function ProfileScreen({ navigation }: any) {
         </View>
 
         {/* Stats rapides */}
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statNum}>{nbListings}</Text>
-            <Text style={styles.statLabel}>Annonces</Text>
+        {statsError ? (
+          <View style={styles.statsErrorBox}>
+            <Text style={styles.statsErrorText}>Statistiques indisponibles pour le moment.</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <Text style={styles.statNum}>5</Text>
-            <Text style={styles.statLabel}>Max gratuit</Text>
+        ) : (
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statNum}>{nbListings}</Text>
+              <Text style={styles.statLabel}>Annonces</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statBox}>
+              <Text style={styles.statNum}>5</Text>
+              <Text style={styles.statLabel}>Max gratuit</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: nbListings >= 5 ? '#EF4444' : '#10B981' }]}>
+                {Math.max(0, 5 - nbListings)}
+              </Text>
+              <Text style={styles.statLabel}>Restantes</Text>
+            </View>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: nbListings >= 5 ? '#EF4444' : '#10B981' }]}>
-              {Math.max(0, 5 - nbListings)}
-            </Text>
-            <Text style={styles.statLabel}>Restantes</Text>
-          </View>
-        </View>
+        )}
 
         {/* Menu principal */}
         <View style={styles.section}>
@@ -213,6 +223,8 @@ const styles = StyleSheet.create({
   googleBadgeText:{ fontSize: 12, color: BLUE, fontWeight: '600' },
 
   statsRow:   { flexDirection: 'row', backgroundColor: '#fff', marginTop: 12, marginHorizontal: 16, borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: BORDER },
+  statsErrorBox:  { backgroundColor: '#FEF2F2', marginTop: 12, marginHorizontal: 16, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#FECACA' },
+  statsErrorText: { fontSize: 13, color: '#991B1B', textAlign: 'center' },
   statBox:    { flex: 1, alignItems: 'center' },
   statNum:    { fontSize: 22, fontWeight: '900', color: BLUE },
   statLabel:  { fontSize: 11, color: GRAY, marginTop: 2 },

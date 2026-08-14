@@ -172,21 +172,24 @@ export function Home() {
   const [activeWilaya, setActiveWilaya]           = useState('Alger');
   const [listings, setListings]                   = useState<any[]>([]);
   const [loading, setLoading]                     = useState(true);
+  const [loadError, setLoadError]                 = useState(false);
 
-  useEffect(() => {
-    const fetchListings = async () => {
-      try {
-        const { data, error } = await supabase.from('listings').select('*');
-        if (error) console.error('Erreur Supabase :', error);
-        else setListings(data ?? []);
-      } catch (err) {
-        console.error('Erreur inattendue :', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchListings();
-  }, []);
+  const fetchListings = async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const { data, error } = await supabase.from('listings').select('*');
+      if (error) { console.error('Erreur Supabase :', error); setLoadError(true); }
+      else setListings(data ?? []);
+    } catch (err) {
+      console.error('Erreur inattendue :', err);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchListings(); }, []);
 
   const filteredByWilaya = listings
     .filter(l => l.wilaya?.toLowerCase().includes(activeWilaya.toLowerCase()) ||
@@ -452,6 +455,15 @@ export function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 12 : 20 }}>
             {loading
               ? [...Array(4)].map((_, i) => <div key={i} style={{ height: isMobile ? 220 : 280, background: '#f3f4f6', borderRadius: 14 }} />)
+              : loadError
+                ? (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '32px 24px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12 }}>
+                    <p style={{ color: '#991B1B', fontSize: '1.4rem', marginBottom: 14 }}>Impossible de charger les annonces. Vérifiez votre connexion.</p>
+                    <button onClick={fetchListings} style={{ padding: '9px 20px', background: '#fff', border: '1px solid #FECACA', borderRadius: 8, color: '#991B1B', fontWeight: 700, cursor: 'pointer' }}>
+                      Réessayer
+                    </button>
+                  </div>
+                )
               : filteredByWilaya.length > 0
                 ? filteredByWilaya.map(listing => (
                     <div key={listing.id} onClick={() => navigate(`/listing/${listing.id}`)}
