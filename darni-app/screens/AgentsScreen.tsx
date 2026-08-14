@@ -2,37 +2,85 @@
  * AgentsScreen.tsx — Darni
  * Liste agents & agences — cliquable vers AgentProfileScreen
  */
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { supabase } from '../lib/supabase';
 
 const BLUE = '#1B4FD8'; const DARK = '#111827';
 const GRAY = '#6B7280'; const GRAY_LT = '#9CA3AF'; const BORDER = '#E5E7EB';
 
-const MOCK_AGENTS = [
-  { id: '1', name: 'Karim Mansouri',   agency: 'Immo Alger',   wilaya: 'Alger',       listings: 12, verified: true,  color: '#4A90D9', phone: '+213555010101' },
-  { id: '2', name: 'Sara Bensalem',    agency: 'Premium Immo', wilaya: 'Oran',        listings: 8,  verified: true,  color: '#E8A87C', phone: '+213555020202' },
-  { id: '3', name: 'Mohamed Aissaoui', agency: 'Biens & Co',   wilaya: 'Alger',       listings: 15, verified: true,  color: '#7BB8A0', phone: '+213555030303' },
-  { id: '4', name: 'Yasmine Hamdi',    agency: 'El Immo',      wilaya: 'Constantine', listings: 6,  verified: false, color: '#D4789C', phone: '+213555040404' },
-  { id: '5', name: 'Amine Tabet',      agency: 'Top Immo',     wilaya: 'Alger',       listings: 20, verified: true,  color: '#5E8BC8', phone: '+213555050505' },
-  { id: '6', name: 'Nadia Ferhat',     agency: 'Casa+',        wilaya: 'Annaba',      listings: 9,  verified: true,  color: '#9B7EC8', phone: '+213555060606' },
-];
+// Palette de couleurs d'avatar assignée de façon stable par agent (pas de champ "color" en base)
+const AVATAR_COLORS = ['#4A90D9', '#E8A87C', '#7BB8A0', '#D4789C', '#5E8BC8', '#9B7EC8'];
+const colorFor = (id: string) => {
+  const hash = id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+};
 
-const MOCK_AGENCIES = [
-  { id: 'a1', name: 'Premium Immo', wilaya: 'Alger',       agents: 5, listings: 48, color: '#4A90D9', phone: '+213555100100' },
-  { id: 'a2', name: 'Biens & Co',   wilaya: 'Oran',        agents: 3, listings: 31, color: '#7BB8A0', phone: '+213555100200' },
-  { id: 'a3', name: 'El Immo',      wilaya: 'Constantine', agents: 4, listings: 22, color: '#E8A87C', phone: '+213555100300' },
-  { id: 'a4', name: 'Top Immo',     wilaya: 'Alger',       agents: 8, listings: 67, color: '#5E8BC8', phone: '+213555100400' },
-];
+type AgentRow = {
+  id: string; name: string; wilaya: string; listings: number;
+  verified: boolean; color: string; phone: string;
+};
 
 export function AgentsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'agents' | 'agences'>('agents');
   const [search,    setSearch]    = useState('');
+  const [agents,    setAgents]    = useState<AgentRow[]>([]);
+  const [loading,   setLoading]   = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadAgents() {
+      setLoading(true);
+      // Profils qui possèdent au moins une annonce, avec le compte d'annonces
+      // et la wilaya la plus fréquente de leurs biens.
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, phone, badge_level, listings:listings(wilaya)')
+        .not('listings', 'is', null);
+
+      if (!isMounted) return;
+      if (error) {
+        console.error('Erreur chargement agents:', error.message);
+        setAgents([]);
+        setLoading(false);
+        return;
+      }
+
+      const rows: AgentRow[] = (data ?? [])
+        .filter((p: any) => p.listings && p.listings.length > 0)
+        .map((p: any) => {
+          const wilayaCounts: Record<string, number> = {};
+          for (const l of p.listings) {
+            if (l.wilaya) wilayaCounts[l.wilaya] = (wilayaCounts[l.wilaya] ?? 0) + 1;
+          }
+          const topWilaya = Object.entries(wilayaCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
+          return {
+            id: p.id,
+            name: p.full_name ?? 'Agent Darni',
+            wilaya: topWilaya,
+            listings: p.listings.length,
+            verified: p.badge_level === 'verified' || p.badge_level === 'pro',
+            color: colorFor(p.id),
+            phone: p.phone ?? '',
+          };
+        });
+
+      setAgents(rows);
+      setLoading(false);
+    }
+    loadAgents();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Regroupement par agence — pas encore de vraie notion "agence" en base,
+  // donc chaque agent verifié agit comme sa propre fiche pour l'instant.
+  const agencies = useMemo(() => agents.filter(a => a.verified), [agents]);
 
   const q = search.toLowerCase();
-  const filteredAgents   = MOCK_AGENTS.filter(a => a.name.toLowerCase().includes(q) || a.wilaya.toLowerCase().includes(q));
-  const filteredAgencies = MOCK_AGENCIES.filter(a => a.name.toLowerCase().includes(q) || a.wilaya.toLowerCase().includes(q));
+  const filteredAgents   = agents.filter(a => a.name.toLowerCase().includes(q) || a.wilaya.toLowerCase().includes(q));
+  const filteredAgencies = agencies.filter(a => a.name.toLowerCase().includes(q) || a.wilaya.toLowerCase().includes(q));
 
   const goToProfile = (item: any) => {
     navigation.navigate('AgentProfile', { agent: item });
@@ -68,7 +116,12 @@ export function AgentsScreen({ navigation }: any) {
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 80, gap: 12 }}
         showsVerticalScrollIndicator={false}>
-        {activeTab === 'agents'
+        {loading && (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <ActivityIndicator color={BLUE} />
+          </View>
+        )}
+        {!loading && activeTab === 'agents'
           ? filteredAgents.map(agent => (
               <TouchableOpacity key={agent.id} style={styles.card} onPress={() => goToProfile(agent)}>
                 <View style={[styles.avatar, { backgroundColor: agent.color }]}>
@@ -85,7 +138,6 @@ export function AgentsScreen({ navigation }: any) {
                       </View>
                     )}
                   </View>
-                  <Text style={styles.agentAgency}>{agent.agency}</Text>
                   <Text style={styles.agentMeta}>{agent.wilaya} · {agent.listings} annonces</Text>
                 </View>
                 <Text style={{ color: GRAY_LT, fontSize: 20 }}>›</Text>
@@ -98,16 +150,15 @@ export function AgentsScreen({ navigation }: any) {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.agentName}>{agency.name}</Text>
-                  <Text style={styles.agentMeta}>{agency.wilaya}</Text>
-                  <Text style={styles.agentMeta}>{agency.agents} agents · {agency.listings} annonces</Text>
+                  <Text style={styles.agentMeta}>{agency.wilaya} · {agency.listings} annonces</Text>
                 </View>
                 <Text style={{ color: GRAY_LT, fontSize: 20 }}>›</Text>
               </TouchableOpacity>
             ))
         }
-        {(activeTab === 'agents' ? filteredAgents : filteredAgencies).length === 0 && (
+        {!loading && (activeTab === 'agents' ? filteredAgents : filteredAgencies).length === 0 && (
           <Text style={{ textAlign: 'center', color: GRAY_LT, marginTop: 40, fontSize: 14 }}>
-            Aucun résultat pour "{search}"
+            {search ? `Aucun résultat pour "${search}"` : 'Aucun agent pour le moment'}
           </Text>
         )}
       </ScrollView>

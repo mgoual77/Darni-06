@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import Svg, { Path } from 'react-native-svg';
 import { supabase } from '../lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -13,18 +14,34 @@ WebBrowser.maybeCompleteAuthSession();
 const BLUE = '#1B4FD8'; const DARK = '#111827';
 const GRAY = '#6B7280'; const GRAY_LT = '#9CA3AF'; const BORDER = '#E5E7EB';
 
-function GoogleLogo({ size = 22 }: { size?: number }) {
-  const r = size / 2;
+// Vrai logo "G" Google (tracé officiel multicolore), identique à celui utilisé
+// par les apps qui suivent les Google Sign-In Branding Guidelines.
+function GoogleLogo({ size = 20 }: { size?: number }) {
   return (
-    <View style={{ width: size, height: size, borderRadius: r, overflow: 'hidden', backgroundColor: '#fff' }}>
-      <View style={{ position: 'absolute', top: 0,    left: 0,  width: r, height: r, backgroundColor: '#4285F4' }} />
-      <View style={{ position: 'absolute', top: 0,    right: 0, width: r, height: r, backgroundColor: '#EA4335' }} />
-      <View style={{ position: 'absolute', bottom: 0, left: 0,  width: r, height: r, backgroundColor: '#FBBC05' }} />
-      <View style={{ position: 'absolute', bottom: 0, right: 0, width: r, height: r, backgroundColor: '#34A853' }} />
-      <View style={{ position: 'absolute', top: size*0.18, left: size*0.18, width: size*0.64, height: size*0.64, borderRadius: size*0.32, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: '#4285F4', fontSize: size*0.38, fontWeight: '800', lineHeight: size*0.42 }}>G</Text>
-      </View>
-    </View>
+    <Svg width={size} height={size} viewBox="0 0 48 48">
+      <Path
+        fill="#FFC107"
+        d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12
+        c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24
+        c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+      />
+      <Path
+        fill="#FF3D00"
+        d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039
+        l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+      />
+      <Path
+        fill="#4CAF50"
+        d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36
+        c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
+      />
+      <Path
+        fill="#1976D2"
+        d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571
+        c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24
+        C44,22.659,43.862,21.35,43.611,20.083z"
+      />
+    </Svg>
   );
 }
 
