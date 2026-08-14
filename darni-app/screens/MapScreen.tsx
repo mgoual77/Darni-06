@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Image, Dimensions, ActivityIndicator,
+  Image, ActivityIndicator,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -88,9 +88,7 @@ export function MapScreen({ navigation, route }: any) {
   const [reloadKey,    setReloadKey]    = useState(0);
 
   useEffect(() => {
-    if (listings.length > 0) { setLoading(false); return; }
-    setLoading(true);
-    setLoadError('');
+    if (listings.length > 0) return;
     supabase.from('listings').select('*').order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (error) {
@@ -101,7 +99,7 @@ export function MapScreen({ navigation, route }: any) {
         }
         setLoading(false);
       });
-  }, [reloadKey]);
+  }, [reloadKey, listings.length]);
 
   const filtered = listings.filter(l =>
     activeFilter === 'all' || l.transaction === activeFilter
@@ -148,7 +146,7 @@ export function MapScreen({ navigation, route }: any) {
       ) : loadError !== '' ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
           <Text style={{ color: '#991B1B', fontSize: 14, textAlign: 'center', marginBottom: 14 }}>{loadError}</Text>
-          <TouchableOpacity onPress={() => setReloadKey(k => k + 1)}
+          <TouchableOpacity onPress={() => { setLoading(true); setLoadError(''); setReloadKey(k => k + 1); }}
             style={{ paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#FECACA' }}>
             <Text style={{ fontSize: 13, fontWeight: '700', color: '#991B1B' }}>Réessayer</Text>
           </TouchableOpacity>

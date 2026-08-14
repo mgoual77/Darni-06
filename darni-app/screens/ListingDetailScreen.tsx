@@ -7,7 +7,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { fetchVerifiedUserIds } from '../lib/verifiedSellers';
-import { BLUE, DARK, GRAY, GRAY_LT, BORDER, BG } from '../lib/theme';
+import { BLUE, DARK, GRAY_LT, BORDER, BG } from '../lib/theme';
 import { smartPrice, getPhotos, buildWA, buildTel } from '../lib/format';
 import { TYPE_LABELS, AMENITY_LABELS } from '../lib/labels';
 
@@ -34,7 +34,6 @@ export function ListingDetailScreen({ route, navigation }: any) {
       .then(({ data }) => setSellerPro(!!data && data.length > 0));
   }, [listing.user_id]);
 
-  const phone = listing.phone ?? listing.whatsapp ?? null;
   const waLink = buildWA(listing.whatsapp ?? listing.phone);
   const telLink = buildTel(listing.phone ?? listing.whatsapp);
   const location = [listing.quartier, listing.commune, listing.wilaya].filter(Boolean).join(', ');
@@ -67,7 +66,7 @@ export function ListingDetailScreen({ route, navigation }: any) {
       await Share.share({
         message: `${listing.title ?? 'Bien immobilier'} — ${smartPrice(listing.price, listing.transaction)} sur Darni.app`,
       });
-    } catch (e) {}
+    } catch {}
   };
 
   // Hauteur footer dynamique selon safe area

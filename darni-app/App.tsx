@@ -1,5 +1,4 @@
 import { enableScreens } from 'react-native-screens';
-enableScreens();
 
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
@@ -25,6 +24,8 @@ import { AboutScreen }          from './screens/AboutScreen';
 import { ResetPasswordScreen }  from './screens/ResetPasswordScreen';
 import { supabase }             from './lib/supabase';
 
+enableScreens();
+
 const Tab   = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 const BLUE  = '#1B4FD8';
@@ -45,7 +46,7 @@ const linking = {
 
 // ── Splash Screen ─────────────────────────────────────────────────────────────
 function SplashScreen() {
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const [fadeAnim] = React.useState(() => new Animated.Value(0));
 
   React.useEffect(() => {
     Animated.sequence([
@@ -53,7 +54,7 @@ function SplashScreen() {
       Animated.delay(1800),
       Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim]);
 
   return (
     <View style={{ flex: 1, backgroundColor: BLUE, justifyContent: 'center', alignItems: 'center' }}>

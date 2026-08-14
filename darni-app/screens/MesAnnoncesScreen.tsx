@@ -48,7 +48,9 @@ export function MesAnnoncesScreen({ navigation }: any) {
   }, []);
 
   useEffect(() => {
-    load();
+    // load() met à jour l'état dès son premier await ; on le décale d'un micro-tick
+    // pour ne pas déclencher de setState de façon synchrone dans l'effet.
+    queueMicrotask(load);
     const unsubscribe = navigation?.addListener?.('focus', load);
     return unsubscribe;
   }, [load, navigation]);

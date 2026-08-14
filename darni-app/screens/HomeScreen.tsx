@@ -36,9 +36,7 @@ export function HomeScreen({ navigation }: any) {
   const [activeWilaya,  setActiveWilaya]  = useState('Alger');
   const [heroTab,       setHeroTab]       = useState('Propriétés');
 
-  const loadListings = () => {
-    setLoading(true);
-    setLoadError('');
+  const fetchListings = () => {
     supabase
       .from('listings')
       .select('*')
@@ -50,7 +48,13 @@ export function HomeScreen({ navigation }: any) {
       });
   };
 
-  useEffect(() => { loadListings(); }, []);
+  const retryListings = () => {
+    setLoading(true);
+    setLoadError('');
+    fetchListings();
+  };
+
+  useEffect(() => { fetchListings(); }, []);
 
   const byWilaya = listings
     .filter(l => l.wilaya?.toLowerCase().includes(activeWilaya.toLowerCase()))
@@ -173,7 +177,7 @@ export function HomeScreen({ navigation }: any) {
             <View style={{ flex: 1 }}>
               <View style={styles.ctaNewBadge}><Text style={styles.ctaNewText}>NOUVEAU</Text></View>
               <Text style={styles.ctaTitle}>Vendez ou louez{'\n'}avec confiance</Text>
-              <Text style={styles.ctaSub}>Des milliers d'acheteurs vérifient Darni chaque jour</Text>
+              <Text style={styles.ctaSub}>Des milliers d&apos;acheteurs vérifient Darni chaque jour</Text>
             </View>
             <View style={styles.ctaArrow}>
               <Text style={{ color: '#00513F', fontSize: 20, fontWeight: '700' }}>→</Text>
@@ -205,7 +209,7 @@ export function HomeScreen({ navigation }: any) {
             ) : loadError !== '' ? (
               <View style={styles.errorBox}>
                 <Text style={styles.errorText}>{loadError}</Text>
-                <TouchableOpacity onPress={loadListings} style={styles.retryBtn}>
+                <TouchableOpacity onPress={retryListings} style={styles.retryBtn}>
                   <Text style={styles.retryText}>Réessayer</Text>
                 </TouchableOpacity>
               </View>
@@ -261,7 +265,7 @@ export function HomeScreen({ navigation }: any) {
               </View>
               <View style={{ flex: 1, marginLeft: 14 }}>
                 <Text style={styles.agenceTitle}>Trouvez un agent de confiance</Text>
-                <Text style={styles.agenceSub}>Des agents vérifiés dans toute l'Algérie</Text>
+                <Text style={styles.agenceSub}>Des agents vérifiés dans toute l&apos;Algérie</Text>
               </View>
               <Text style={{ color: '#fff', fontSize: 20 }}>›</Text>
             </View>

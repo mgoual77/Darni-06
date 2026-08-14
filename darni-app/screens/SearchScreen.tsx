@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, Image, ActivityIndicator, Dimensions,
+  StyleSheet, Image, ActivityIndicator,
   Linking, Modal, StatusBar
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { fetchVerifiedUserIds } from '../lib/verifiedSellers';
 import { BLUE, DARK, GRAY, GRAY_LT, BORDER, BG } from '../lib/theme';
-import { smartPrice, firstPhoto, getPhotos } from '../lib/format';
+import { smartPrice, getPhotos } from '../lib/format';
 import { POPULAR_WILAYAS } from '../lib/wilayas';
-
-const { width } = Dimensions.get('window');
 
 const TYPES = ['Appartement', 'Villa', 'Bureau', 'Local', 'Terrain', 'Autre'];
 const WILAYAS = POPULAR_WILAYAS;
@@ -65,9 +63,7 @@ export function SearchScreen({ route, navigation }: any) {
   const [tmpPriceMin,    setTmpPriceMin]    = useState('');
   const [tmpPriceMax,    setTmpPriceMax]    = useState('');
 
-  const loadListings = () => {
-    setLoading(true);
-    setLoadError('');
+  const fetchListings = () => {
     supabase.from('listings').select('*').order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (error) { setLoadError("Impossible de charger les annonces. Vérifiez votre connexion."); setLoading(false); return; }
@@ -77,7 +73,13 @@ export function SearchScreen({ route, navigation }: any) {
       });
   };
 
-  useEffect(() => { loadListings(); }, []);
+  const retryListings = () => {
+    setLoading(true);
+    setLoadError('');
+    fetchListings();
+  };
+
+  useEffect(() => { fetchListings(); }, []);
 
   let filtered = listings;
   if (filterTransaction) filtered = filtered.filter(l => l.transaction?.toLowerCase() === filterTransaction);
@@ -254,7 +256,7 @@ export function SearchScreen({ route, navigation }: any) {
       ) : loadError !== '' ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{loadError}</Text>
-          <TouchableOpacity onPress={loadListings} style={styles.retryBtn}>
+          <TouchableOpacity onPress={retryListings} style={styles.retryBtn}>
             <Text style={styles.retryText}>Réessayer</Text>
           </TouchableOpacity>
         </View>

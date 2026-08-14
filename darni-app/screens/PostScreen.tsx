@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, Alert, ActivityIndicator, StatusBar,
-  Dimensions,
 } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,7 +11,6 @@ import { WILAYAS } from '../lib/wilayas';
 import { TYPE_LABELS } from '../lib/labels';
 import { GOOGLE_PLACES_API_KEY } from '../lib/config';
 
-const { width } = Dimensions.get('window');
 const MAX_FREE = 5;
 const GOOGLE_API_KEY = GOOGLE_PLACES_API_KEY;
 
@@ -92,7 +90,7 @@ function PaywallScreen({ used, navigation }: { used: number; navigation: any }) 
           onPress={() => Alert.alert('Darni Pro International', 'Le paiement Stripe (€) arrive très bientôt.')}>
           <View>
             <Text style={styles.proCardAltTitle}>Darni Pro Diaspora</Text>
-            <Text style={styles.proCardAltSub}>Pour les Algériens à l'étranger</Text>
+            <Text style={styles.proCardAltSub}>Pour les Algériens à l&apos;étranger</Text>
           </View>
           <View style={styles.proAltRight}>
             <Text style={styles.proAltPrice}>7 €</Text>
@@ -127,7 +125,7 @@ function LoginRequiredScreen({ navigation }: { navigation: any }) {
       </Text>
       <TouchableOpacity style={styles.loginBtn}
         onPress={() => navigation.navigate('Connexion')}>
-        <Text style={styles.loginBtnText}>Se connecter / S'inscrire</Text>
+        <Text style={styles.loginBtnText}>Se connecter / S&apos;inscrire</Text>
       </TouchableOpacity>
       <TouchableOpacity style={{ marginTop: 14 }}
         onPress={() => navigation.navigate('Accueil')}>
@@ -352,7 +350,7 @@ export function PostScreen({ navigation }: any) {
         {/* ÉTAPE 2 */}
         {step === 1 && (
           <View style={styles.stepContent}>
-            <Text style={styles.sectionLabel}>Titre de l'annonce</Text>
+            <Text style={styles.sectionLabel}>Titre de l&apos;annonce</Text>
             <TextInput placeholder="Ex: Appartement F3 rénové avec vue mer..."
               value={form.title} onChangeText={v => update('title', v)}
               style={styles.input} placeholderTextColor={GRAY_LT} />
@@ -424,7 +422,7 @@ export function PostScreen({ navigation }: any) {
             {listingCount === MAX_FREE - 1 && (
               <View style={styles.warningBox}>
                 <Text style={styles.warningText}>
-                  Attention : c'est votre dernière annonce gratuite. Au-delà, un abonnement Pro sera requis.
+                  Attention : c&apos;est votre dernière annonce gratuite. Au-delà, un abonnement Pro sera requis.
                 </Text>
               </View>
             )}
@@ -450,7 +448,7 @@ export function PostScreen({ navigation }: any) {
           <TouchableOpacity style={styles.submitBtn} onPress={submit} disabled={loading}>
             {loading
               ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.nextBtnText}>Publier l'annonce</Text>
+              : <Text style={styles.nextBtnText}>Publier l&apos;annonce</Text>
             }
           </TouchableOpacity>
         )}

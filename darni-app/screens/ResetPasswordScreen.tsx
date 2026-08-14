@@ -127,7 +127,7 @@ export function ResetPasswordScreen({ navigation }: any) {
           style={{ marginTop: 20, alignItems: 'center' }}
           onPress={() => navigation.replace('Main')}
         >
-          <Text style={{ color: GRAY, fontSize: 14 }}>← Retour à l'accueil</Text>
+          <Text style={{ color: GRAY, fontSize: 14 }}>← Retour à l&apos;accueil</Text>
         </TouchableOpacity>
 
       </ScrollView>

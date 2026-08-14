@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Linking, Image, Dimensions,
+  StyleSheet, Linking, Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
@@ -144,7 +144,7 @@ function AboutPage() {
       {/* ── Hero ── */}
       <View style={styles.hero}>
         <Text style={styles.heroLogo}>darni</Text>
-        <Text style={styles.heroTagline}>L'immobilier en Algérie,{'\n'}en toute sérénité.</Text>
+        <Text style={styles.heroTagline}>L&apos;immobilier en Algérie,{'\n'}en toute sérénité.</Text>
         <Text style={styles.heroSub}>
           La première application immobilière dédiée au marché algérien — pour les particuliers et les professionnels.
         </Text>
@@ -166,7 +166,7 @@ function AboutPage() {
           <Text style={styles.sectionLabelText}>Notre mission</Text>
         </View>
         <Text style={styles.missionTitle}>
-          Rendre l'immobilier algérien transparent et accessible à tous.
+          Rendre l&apos;immobilier algérien transparent et accessible à tous.
         </Text>
         <Text style={styles.missionBody}>
           Darni a été créé pour répondre à un besoin réel : simplifier la recherche, la vente et la location de biens immobiliers en Algérie. Que vous soyez acheteur, vendeur, locataire ou agent, Darni vous accompagne à chaque étape.
@@ -209,9 +209,9 @@ function AboutPage() {
 
       {/* ── Couverture ── */}
       <View style={styles.coverageBanner}>
-        <Text style={styles.coverageTitle}>Présent dans toute l'Algérie</Text>
+        <Text style={styles.coverageTitle}>Présent dans toute l&apos;Algérie</Text>
         <Text style={styles.coverageBody}>
-          D'Alger à Tamanrasset, d'Oran à Annaba — Darni couvre les 48 wilayas d'Algérie avec des annonces locales et des agents de proximité.
+          D&apos;Alger à Tamanrasset, d&apos;Oran à Annaba — Darni couvre les 48 wilayas d&apos;Algérie avec des annonces locales et des agents de proximité.
         </Text>
         {/* Représentation visuelle simple des régions */}
         <View style={styles.coverageRegions}>
@@ -258,7 +258,7 @@ function AboutPage() {
           </View>
           <Text style={styles.proTitle}>Vous êtes agent ou agence ?</Text>
           <Text style={styles.proBody}>
-            Rejoignez le réseau Darni Pro — annonces illimitées, profil vérifié et accès à des milliers d'acheteurs et locataires.
+            Rejoignez le réseau Darni Pro — annonces illimitées, profil vérifié et accès à des milliers d&apos;acheteurs et locataires.
           </Text>
         </View>
         <Text style={{ color: '#fff', fontSize: 32, opacity: 0.5 }}>⊕</Text>
