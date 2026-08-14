@@ -26,11 +26,10 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setMessage('');
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({ 
-      email,
-      shouldCreateUser: true,
-      options: { emailRedirectTo: undefined }
-    });
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true, emailRedirectTo: undefined },
+      });
       
       if (error) {
         setMessage(error.message);
