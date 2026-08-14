@@ -26,12 +26,6 @@ const GOOGLE_KEY = 'AIzaSyCbCrbbocArzRzzr0MYohUw6h0goJEhKlc';
 const WILAYAS   = ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Sétif'];
 const HERO_TABS = ['Propriétés', 'Nouveaux', 'Agences'];
 
-const RECENT_SEARCHES = [
-  { id: '1', location: 'Alger Centre', type: 'Appartement', filters: '2-3 pièces · Vente' },
-  { id: '2', location: 'Hydra, Alger', type: 'Villa',       filters: '5+ pièces · Vente'  },
-  { id: '3', location: 'Oran',         type: 'Appartement', filters: 'Location'            },
-];
-
 function smartPrice(price: number, transaction?: string): string {
   if (!price) return '— DA';
   const s = transaction === 'location' ? '/mois' : '';
@@ -66,7 +60,6 @@ export function HomeScreen({ navigation }: any) {
       .then(({ data }) => { setListings(data ?? []); setLoading(false); });
   }, []);
 
-  const featured = listings.filter(l => l.is_featured).slice(0, 8);
   const byWilaya = listings
     .filter(l => l.wilaya?.toLowerCase().includes(activeWilaya.toLowerCase()))
     .slice(0, 4);
@@ -87,7 +80,7 @@ export function HomeScreen({ navigation }: any) {
       >
         {/* Skyline PNG full-width */}
         <Image
-          source={{ uri: 'https://etcuelnixtwuazyfmnvm.supabase.co/storage/v1/object/public/listing-photos/file_00000000f80071f4a44b52ee2ba5d079.png' }}
+          source={require('../assets/darni_skyline.png')}
           style={{ width: W, height: 165 }}
           resizeMode="cover"
         />
@@ -182,87 +175,6 @@ export function HomeScreen({ navigation }: any) {
 
         {/* ── BODY ── */}
         <View style={{ paddingTop: 24 }}>
-
-          {/* Recherches récentes */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recherches récentes</Text>
-            <ScrollView
-              horizontal showsHorizontalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ gap: 12, paddingRight: 16, marginTop: 12 }}
-            >
-              {RECENT_SEARCHES.map(s => (
-                <TouchableOpacity
-                  key={s.id} style={styles.recentCard}
-                  onPress={() => navigation.navigate('Recherche', { q: s.location })}
-                >
-                  <View style={styles.recentThumb} />
-                  <View style={{ flex: 1, paddingLeft: 10 }}>
-                    <Text style={styles.recentLocation}>{s.location}</Text>
-                    <Text style={styles.recentType}>{s.type}</Text>
-                    {!!s.filters && (
-                      <View style={styles.recentFilterRow}>
-                        <View style={styles.recentFilterBadge}>
-                          <Text style={styles.recentFilterText}>{s.filters}</Text>
-                        </View>
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Biens en vedette */}
-          {featured.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <View>
-                  <Text style={styles.sectionTitle}>Biens en vedette</Text>
-                  <Text style={styles.sectionSub}>Les meilleures opportunités sélectionnées</Text>
-                </View>
-                <TouchableOpacity onPress={() => navigation.navigate('Recherche', {})}>
-                  <Text style={styles.seeAll}>Voir tout</Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView
-                horizontal showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ gap: 14, paddingRight: 16 }}
-              >
-                {featured.map(l => (
-                  <TouchableOpacity key={l.id} style={styles.featuredCard}
-                    onPress={() => navigation.navigate('ListingDetail', { listing: l })}>
-                    <View style={{ position: 'relative', height: 160 }}>
-                      <Image source={{ uri: firstPhoto(l) }} style={styles.featuredImage} resizeMode="cover" />
-                      <View style={styles.featuredGradient} />
-                      <View style={styles.featuredBadge}>
-                        <Text style={styles.featuredBadgeText}>
-                          {l.transaction === 'location' ? 'Location' : 'Vente'}
-                        </Text>
-                      </View>
-                      <View style={styles.featuredPriceRow}>
-                        <Text style={styles.featuredPrice}>{smartPrice(l.price)}</Text>
-                        <View style={styles.darniDot}><Text style={styles.darniDotText}>D</Text></View>
-                      </View>
-                    </View>
-                    <View style={styles.featuredContent}>
-                      <Text style={styles.featuredType}>{l.type?.charAt(0).toUpperCase() + l.type?.slice(1)}</Text>
-                      <Text style={styles.featuredLocation} numberOfLines={1}>
-                        {[l.commune, l.wilaya].filter(Boolean).join(', ')}
-                      </Text>
-                      {(l.surface || l.bedrooms) && (
-                        <Text style={styles.featuredSpecs}>
-                          {[l.surface ? `${l.surface} m²` : null, l.bedrooms ? `${l.bedrooms} ch` : null]
-                            .filter(Boolean).join(' · ')}
-                        </Text>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
 
           {/* CTA Vendeur */}
           <TouchableOpacity style={styles.ctaBanner} onPress={() => navigation.navigate('Publier')}>
