@@ -287,7 +287,6 @@ export function SearchScreen({ route, navigation }: any) {
                     <View style={[styles.badge, { backgroundColor: l.transaction === 'location' ? '#0369a1' : BLUE }]}>
                       <Text style={styles.badgeText}>{l.transaction === 'location' ? 'Location' : 'Vente'}</Text>
                     </View>
-                    {l.is_featured && <View style={[styles.badge, { backgroundColor: '#7C3AED' }]}><Text style={styles.badgeText}>Vedette</Text></View>}
                     {newListing && <View style={[styles.badge, { backgroundColor: '#DC2626' }]}><Text style={styles.badgeText}>Nouveau</Text></View>}
                   </View>
                   <View style={styles.verifiedBadge}><Text style={styles.verifiedText}>✓ Vérifié</Text></View>

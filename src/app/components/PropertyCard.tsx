@@ -1,4 +1,4 @@
-import { MapPin, Bed, Square, Star, Bookmark, Phone, MessageCircle, Eye } from 'lucide-react';
+import { MapPin, Bed, Square, Bookmark, Phone, MessageCircle, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
@@ -12,9 +12,6 @@ interface PropertyCardProps {
   surface: number;
   rooms: number;
   bedrooms?: number;
-  featured?: boolean;
-  is_featured?: boolean;
-  rating?: number;
   variant?: 'default' | 'featured' | 'bayut';
   transaction?: string;
   views_count?: number;
@@ -76,7 +73,7 @@ function Badge({ type, transaction }: { type: string; transaction?: string }) {
 
 export function PropertyCard({
   id, image, price, type, wilaya, commune,
-  surface, rooms, bedrooms, featured, is_featured, rating = 4.8,
+  surface, rooms, bedrooms,
   variant = 'default', transaction, views_count, created_at,
 }: PropertyCardProps) {
   const [isSaved, setIsSaved] = useState(false);

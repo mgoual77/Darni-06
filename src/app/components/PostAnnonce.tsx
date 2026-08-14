@@ -218,21 +218,6 @@ export default function PostAnnonce() {
   const [step, setStep]         = useState(1)
   const [limitReached, setLimitReached] = useState(false)
 
-  // ── Vérification rôle admin ──────────────────────────────────────────────
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  useEffect(() => {
-    if (!user) return
-    supabase
-      .from('profiles')
-      .select('role, max_listings')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
-        if (data?.role === 'admin') setIsAdmin(true)
-      })
-  }, [user])
-
   const set = (field: keyof FormState, value: any) => setForm(prev => ({ ...prev, [field]: value }))
 
   const toggleDocType = (key: string) => setForm(prev => ({
@@ -316,11 +301,6 @@ export default function PostAnnonce() {
         const msg = insertError.message ?? ''
         const isLimitError = msg.toLowerCase().includes('limite') || insertError.code === 'P0001'
 
-        if (isLimitError && isAdmin) {
-          // ✅ Admin : on ignore la limite côté serveur (le trigger doit aussi être mis à jour)
-          setError('⚠️ Erreur serveur : le trigger de limite est encore actif. Exécute le SQL de suppression dans Supabase.')
-          return
-        }
         if (isLimitError) { setLimitReached(true); return }
         throw insertError
       }
@@ -328,7 +308,7 @@ export default function PostAnnonce() {
       navigate('/mes-annonces')
     } catch (err: unknown) {
       const msg = (err as any)?.message ?? 'Une erreur est survenue.'
-      if (msg.toLowerCase().includes('limite') && !isAdmin) setLimitReached(true)
+      if (msg.toLowerCase().includes('limite')) setLimitReached(true)
       else setError(msg)
     } finally {
       setLoading(false)
@@ -351,12 +331,6 @@ export default function PostAnnonce() {
           </button>
           <div className="flex items-center gap-2 flex-1">
             <h1 className="text-lg font-bold text-gray-800">Poster une annonce</h1>
-            {/* ✅ Badge admin visible */}
-            {isAdmin && (
-              <span style={{ background: '#FEF3C7', color: '#92400E', fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 20, border: '1px solid #FCD34D' }}>
-                👑 Admin — illimité
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -392,8 +366,7 @@ export default function PostAnnonce() {
 
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="bg-white rounded-xl shadow-sm border p-6">
-          {/* ✅ LimiteAtteinte uniquement pour les non-admins */}
-          {limitReached && !isAdmin ? <LimiteAtteinte onBack={() => setLimitReached(false)} /> : (
+          {limitReached ? <LimiteAtteinte onBack={() => setLimitReached(false)} /> : (
             <>
               {step === 1 && (
                 <div className="space-y-5">
@@ -516,21 +489,6 @@ export default function PostAnnonce() {
               {step === 4 && (
                 <div className="space-y-5">
                   <h2 className="text-base font-bold text-gray-800">Photos & Prix</h2>
-
-                  {/* ✅ Option featured pour admin */}
-                  {isAdmin && (
-                    <div className="p-3 rounded-lg" style={{ background: '#FEF3C7', border: '1px solid #FCD34D' }}>
-                      <p className="text-xs font-semibold mb-2" style={{ color: '#92400E' }}>👑 Options Admin</p>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          onChange={e => setForm(prev => ({ ...prev }))}
-                          style={{ width: 16, height: 16, accentColor: BLUE }}
-                        />
-                        <span className="text-sm font-semibold text-gray-700">Mettre en vedette cette annonce</span>
-                      </label>
-                    </div>
-                  )}
 
                   {previewTitle && (
                     <div className="p-3 rounded-lg" style={{ background: '#EEF2FF' }}>

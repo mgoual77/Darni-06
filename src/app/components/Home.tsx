@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Search, ChevronLeft, ChevronRight, ArrowRight, ChevronDown, Mail, Phone, MapPin, Instagram, Twitter, Facebook } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, ArrowRight, ChevronDown, Mail, Phone, MapPin, Instagram, Twitter, Facebook } from 'lucide-react';
 import { PropertyCard } from './PropertyCard';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -171,13 +171,8 @@ export function Home() {
   const [priceMin, setPriceMin]                   = useState('');
   const [priceMax, setPriceMax]                   = useState('');
   const [activeWilaya, setActiveWilaya]           = useState('Alger');
-  const carouselRef                               = useRef<HTMLDivElement>(null);
   const [listings, setListings]                   = useState<any[]>([]);
   const [loading, setLoading]                     = useState(true);
-
-  const scrollCarousel = (dir: 'left' | 'right') => {
-    carouselRef.current?.scrollBy({ left: dir === 'left' ? -320 : 320, behavior: 'smooth' });
-  };
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -194,7 +189,6 @@ export function Home() {
     fetchListings();
   }, []);
 
-  const featuredListings = listings.filter(l => l.is_featured === true).slice(0, 5).map(withImage);
   const filteredByWilaya = listings
     .filter(l => l.wilaya?.toLowerCase().includes(activeWilaya.toLowerCase()) ||
                  activeWilaya.toLowerCase().includes(l.wilaya?.toLowerCase() ?? ''))
@@ -381,34 +375,6 @@ export function Home() {
                 {illustration}
               </div>
             ))}
-          </div>
-        </section>
-
-        {/* 2. Biens en vedette */}
-        <section>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div>
-              <h2 style={{ fontSize: isMobile ? '1.8rem' : '2.2rem', fontWeight: 700, color: '#111827', marginBottom: 4 }}>Biens en vedette</h2>
-              <p style={{ fontSize: '1.4rem', color: '#6B7280' }}>Les meilleures opportunités sélectionnées pour vous</p>
-            </div>
-            {!isMobile && (
-              <div style={{ display: 'flex', gap: 8 }}>
-                {(['left', 'right'] as const).map(dir => (
-                  <button key={dir} onClick={() => scrollCarousel(dir)}
-                    style={{ width: 40, height: 40, border: '1.5px solid #E5E7EB', borderRadius: 10, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {dir === 'left' ? <ChevronLeft style={{ width: 18, height: 18 }} /> : <ChevronRight style={{ width: 18, height: 18 }} />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div ref={carouselRef} className="scrollbar-hide" style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8 }}>
-            {loading
-              ? [...Array(3)].map((_, i) => <div key={i} style={{ minWidth: 280, height: 320, background: '#f3f4f6', borderRadius: 16, flexShrink: 0 }} />)
-              : featuredListings.length > 0
-                ? featuredListings.map(l => <PropertyCard key={l.id} {...l} variant="featured" />)
-                : <p style={{ color: '#9CA3AF', fontSize: '1.4rem' }}>Aucun bien en vedette pour le moment.</p>
-            }
           </div>
         </section>
 

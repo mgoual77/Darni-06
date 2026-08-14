@@ -374,9 +374,6 @@ export function SearchResults() {
                     }}>
                       {listing.transaction === 'location' ? 'Location' : 'Vente'}
                     </span>
-                    {listing.is_featured && (
-                      <span style={{ background: 'linear-gradient(135deg, #1B4FD8, #7C3AED)', color: '#fff', fontSize: '1rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4 }}>Vedette</span>
-                    )}
                     {newListing && (
                       <span style={{ background: 'linear-gradient(135deg, #1B4FD8, #06b6d4)', color: '#fff', fontSize: '1rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4 }}>Nouveau</span>
                     )}

@@ -174,11 +174,6 @@ export function ListingDetailScreen({ route, navigation }: any) {
                 {listing.transaction === 'location' ? 'Location' : 'Vente'}
               </Text>
             </View>
-            {listing.is_featured && (
-              <View style={[styles.badge, { backgroundColor: '#7C3AED' }]}>
-                <Text style={styles.badgeText}>Vedette</Text>
-              </View>
-            )}
             <View style={[styles.badge, { backgroundColor: '#059669' }]}>
               <Text style={styles.badgeText}>✓ Vérifié</Text>
             </View>
