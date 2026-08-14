@@ -101,7 +101,7 @@ export function PlayStoreBanner() {
           rel="noopener noreferrer"
         >
           <img
-            src="https://etcuelnixtwuazyfmnvm.supabase.co/storage/v1/object/sign/Badge%20playstore/playstore%20badge.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9kMmQzZTU2My0wYTZhLTRkYzEtOGEwYi01OTYyZjAyNDA0YmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJCYWRnZSBwbGF5c3RvcmUvcGxheXN0b3JlIGJhZGdlLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODE2MDIxNDAsImV4cCI6MTg3NjIxMDE0MH0.f0pVPFt7CT87jGHzE-Pg4xIPM2LceZa4jbQ-iSL5Yt0"
+            src="/playstore-badge.png"
             alt="Disponible sur Google Play"
             style={badgeStyle}
           />

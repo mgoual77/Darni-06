@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
-  'https://etcuelnixtwuazyfmnvm.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0Y3VlbG5peHR3dWF6eWZtbnZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMDc1MDgsImV4cCI6MjA5Mzg4MzUwOH0.TRT0s0y8RqgV0YggtvSjNsv07xbInLv1MmTRuQBJ7lY'
+  process.env.VITE_SUPABASE_URL as string,
+  process.env.VITE_SUPABASE_ANON_KEY as string
 )
 
 const BASE_URL = 'https://darni.app'
