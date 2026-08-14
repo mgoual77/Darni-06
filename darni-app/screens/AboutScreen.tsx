@@ -3,12 +3,13 @@
  * Page "À propos" rich : hero, stats, mission, offres, valeurs, contact
  * + pages CGU / Confidentialité / Contact (text)
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Linking, Image, Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { supabase } from '../lib/supabase';
 
 const { width: W } = Dimensions.get('window');
 const BLUE    = '#1B4FD8';
@@ -129,6 +130,18 @@ function ValueRow({ icon, title, desc }: { icon: string; title: string; desc: st
    PAGE À PROPOS COMPLÈTE
 ──────────────────────────────────────────── */
 function AboutPage() {
+  const [listingsCount, setListingsCount] = useState<number | null>(null);
+  const [agentsCount,   setAgentsCount]   = useState<number | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    supabase.from('listings').select('id', { count: 'exact', head: true }).eq('status', 'active')
+      .then(({ count }) => { if (isMounted) setListingsCount(count ?? 0); });
+    supabase.from('profiles').select('id', { count: 'exact', head: true }).in('badge_level', ['verified', 'pro'])
+      .then(({ count }) => { if (isMounted) setAgentsCount(count ?? 0); });
+    return () => { isMounted = false; };
+  }, []);
+
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
@@ -141,13 +154,13 @@ function AboutPage() {
         </Text>
       </View>
 
-      {/* ── Stats ── */}
+      {/* ── Stats — chiffres réels depuis Supabase, pas de valeurs inventées ── */}
       <View style={styles.statsRow}>
-        <StatBox num="48"  label="Wilayas" />
+        <StatBox num="48" label="Wilayas" />
         <View style={styles.statDivider} />
-        <StatBox num="64+" label="Annonces" />
+        <StatBox num={listingsCount === null ? '…' : String(listingsCount)} label="Annonces actives" />
         <View style={styles.statDivider} />
-        <StatBox num="12"  label="Agents vérifiés" />
+        <StatBox num={agentsCount === null ? '…' : String(agentsCount)} label="Agents vérifiés" />
       </View>
 
       {/* ── Mission ── */}

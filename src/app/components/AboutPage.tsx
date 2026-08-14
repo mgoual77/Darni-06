@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { ArrowRight, CheckCircle, X, Star, Home, Building2, Users, MapPin, TrendingUp, Shield, Zap, Heart, Globe, Award } from 'lucide-react';
+import { ArrowRight, CheckCircle, X, Home, Building2, Users, MapPin, TrendingUp, Shield, Zap, Heart, Globe, Award } from 'lucide-react';
 import { useSEO } from '../../hooks/useSEO'
+import { supabase } from '../../lib/supabase';
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -105,12 +106,6 @@ const PLANS = [
   },
 ];
 
-const TESTIMONIALS = [
-  { name: 'Karim B.', role: 'Agent immobilier, Alger', text: 'Darni m\'a permis de trouver 3 acheteurs sérieux en une semaine pour un appartement à Hydra. La qualité des contacts est incomparable.', rating: 5, avatar: 'K', color: '#1B4FD8' },
-  { name: 'Samira M.', role: 'Promotrice, Oran', text: '80% de notre résidence vendue en 2 mois grâce à Darni. L\'interface est simple et les acheteurs sont vraiment qualifiés.', rating: 5, avatar: 'S', color: '#7C3AED' },
-  { name: 'Yacine T.', role: 'Particulier vendeur, Constantine', text: 'Vendu mon F4 en 3 semaines sans passer par une agence. Zéro commission, contact direct avec l\'acheteur via WhatsApp.', rating: 5, avatar: 'Y', color: '#00705A' },
-];
-
 export function AboutPage() {
   useSEO({
     title: 'À propos — La plateforme immobilière 100% algérienne',
@@ -133,10 +128,30 @@ export function AboutPage() {
     return () => observer.disconnect();
   }, []);
 
-  const wilayas   = useCountUp(48,    1500, statsVisible);
-  const annonces  = useCountUp(2500,  2000, statsVisible);
-  const agences   = useCountUp(120,   1800, statsVisible);
-  const visiteurs = useCountUp(15000, 2000, statsVisible);
+  // Chiffres réels depuis Supabase — pas de valeurs inventées.
+  const [realStats, setRealStats] = useState({ wilayas: 0, annonces: 0, partenaires: 0, visiteurs: 0 });
+  useEffect(() => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    Promise.all([
+      supabase.from('listings').select('wilaya').eq('status', 'active'),
+      supabase.from('listings').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).in('badge_level', ['verified', 'pro']),
+      supabase.from('listing_views').select('viewer_id', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo),
+    ]).then(([wilayaRes, annoncesRes, agentsRes, viewsRes]) => {
+      const distinctWilayas = new Set((wilayaRes.data ?? []).map((l: any) => l.wilaya).filter(Boolean)).size;
+      setRealStats({
+        wilayas: distinctWilayas,
+        annonces: annoncesRes.count ?? 0,
+        partenaires: agentsRes.count ?? 0,
+        visiteurs: viewsRes.count ?? 0,
+      });
+    });
+  }, []);
+
+  const wilayas   = useCountUp(realStats.wilayas,    1500, statsVisible);
+  const annonces  = useCountUp(realStats.annonces,   2000, statsVisible);
+  const agences   = useCountUp(realStats.partenaires,1800, statsVisible);
+  const visiteurs = useCountUp(realStats.visiteurs,  2000, statsVisible);
 
   const px = isMobile ? '20px' : '40px';
 
@@ -197,10 +212,10 @@ export function AboutPage() {
       <div ref={statsRef} style={{ background: 'linear-gradient(135deg, #0F2D4A 0%, #1B4FD8 100%)', padding: isMobile ? '48px 20px' : '64px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: isMobile ? 24 : 40, textAlign: 'center' }}>
           {[
-            { value: wilayas,   suffix: '',  label: 'Wilayas couvertes',   icon: '📍' },
-            { value: annonces,  suffix: '+', label: 'Annonces publiées',   icon: '🏠' },
-            { value: agences,   suffix: '+', label: 'Partenaires actifs',  icon: '🏢' },
-            { value: visiteurs, suffix: '+', label: 'Visiteurs par mois',  icon: '👥' },
+            { value: wilayas,   suffix: '',  label: 'Wilayas couvertes',        icon: '📍' },
+            { value: annonces,  suffix: '',  label: 'Annonces publiées',        icon: '🏠' },
+            { value: agences,   suffix: '',  label: 'Partenaires vérifiés',     icon: '🏢' },
+            { value: visiteurs, suffix: '',  label: 'Visiteurs (30 derniers jours)', icon: '👥' },
           ].map((s, i) => (
             <div key={i}>
               <div style={{ fontSize: '2.4rem', marginBottom: 8 }}>{s.icon}</div>
@@ -340,7 +355,7 @@ export function AboutPage() {
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 20, marginBottom: 48 }}>
             {[
-              { icon: <Globe style={{ width: 28, height: 28, color: '#1B4FD8' }} />, title: 'Couvrir toute l\'Algérie', desc: 'Atteindre les 58 wilayas avec des annonces dans chaque commune d\'Algérie d\'ici 2027.' },
+              { icon: <Globe style={{ width: 28, height: 28, color: '#1B4FD8' }} />, title: 'Couvrir toute l\'Algérie', desc: 'Atteindre les 48 wilayas avec des annonces dans chaque commune d\'Algérie d\'ici 2027.' },
               { icon: <TrendingUp style={{ width: 28, height: 28, color: '#00705A' }} />, title: '100 000 annonces', desc: 'Devenir la première base de données immobilières en Algérie, devant Ouedkniss et Immovlan.' },
               { icon: <Heart style={{ width: 28, height: 28, color: '#EF4444' }} />, title: 'Confiance & transparence', desc: 'Généraliser la vérification des vendeurs et la notation des agents pour éliminer les arnaques.' },
             ].map((item, i) => (
@@ -358,33 +373,6 @@ export function AboutPage() {
               "Notre ambition est de faire de Darni la référence de l'immobilier en Algérie — la plateforme que chaque Algérien utilise, qu'il cherche à acheter, à louer, ou à vendre son bien."
             </p>
             <p style={{ fontSize: '1.3rem', color: '#6B7280', marginTop: 16, fontWeight: 600 }}>— L'équipe Darni</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── TÉMOIGNAGES ── */}
-      <div style={{ background: '#F7F8FA', padding: isMobile ? '60px 20px' : '100px 40px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: isMobile ? 40 : 56 }}>
-            <p style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1B4FD8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Ils nous font confiance</p>
-            <h2 style={{ fontSize: isMobile ? '2.4rem' : '3.4rem', fontWeight: 900, color: '#111827' }}>Ce qu'ils disent de Darni</h2>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 20 }}>
-            {TESTIMONIALS.map((t, i) => (
-              <div key={i} style={{ background: '#fff', borderRadius: 16, padding: '28px 24px', border: '1px solid #E5E7EB' }}>
-                <div style={{ display: 'flex', gap: 2, marginBottom: 16 }}>
-                  {[...Array(t.rating)].map((_, j) => <Star key={j} style={{ width: 15, height: 15, fill: '#F5A623', color: '#F5A623' }} />)}
-                </div>
-                <p style={{ fontSize: '1.4rem', color: '#374151', lineHeight: 1.8, marginBottom: 20, fontStyle: 'italic' }}>"{t.text}"</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: `linear-gradient(135deg, ${t.color}, ${t.color}99)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '1.6rem' }}>{t.avatar}</div>
-                  <div>
-                    <p style={{ fontSize: '1.3rem', fontWeight: 700, color: '#111827' }}>{t.name}</p>
-                    <p style={{ fontSize: '1.2rem', color: '#6B7280' }}>{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>

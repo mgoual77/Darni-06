@@ -1,39 +1,88 @@
 /**
  * AgentProfileScreen.tsx — Darni
- * Profil détaillé d'un agent ou agence
+ * Profil détaillé d'un agent — annonces, spécialités et zones dérivées de ses vraies annonces.
  */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Linking, Alert,
+  View, Text, ScrollView, TouchableOpacity, Image,
+  StyleSheet, Linking, Alert, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { supabase } from '../lib/supabase';
 
 const BLUE = '#1B4FD8'; const DARK = '#111827';
 const GRAY = '#6B7280'; const GRAY_LT = '#9CA3AF'; const BORDER = '#E5E7EB';
+
+const TYPE_LABELS: Record<string, string> = {
+  appartement: 'Appartements', villa: 'Villas', bureau: 'Bureaux',
+  local: 'Locaux commerciaux', terrain: 'Terrains', autre: 'Autres',
+};
+
+function smartPrice(price: number, transaction?: string): string {
+  if (!price) return '— DA';
+  const s = transaction === 'location' ? '/mois' : '';
+  if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1).replace('.0', '')} Mrd DA${s}`;
+  if (price >= 1_000_000)     return `${(price / 1_000_000).toFixed(1).replace('.0', '')} M DA${s}`;
+  return price.toLocaleString('fr-DZ') + ` DA${s}`;
+}
+
+function firstPhoto(listing: any): string {
+  const fb = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400';
+  const p = listing.photos;
+  if (!p || !Array.isArray(p) || p.length === 0) return fb;
+  return typeof p[0] === 'string' ? p[0] : (p[0]?.url ?? fb);
+}
 
 export function AgentProfileScreen({ route, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { agent } = route.params;
 
+  const [listings, setListings] = useState<any[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+    supabase
+      .from('listings')
+      .select('*')
+      .eq('user_id', agent.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .then(({ data, error: fetchError }) => {
+        if (!isMounted) return;
+        if (fetchError) {
+          setError("Impossible de charger les annonces de cet agent.");
+        } else {
+          setListings(data ?? []);
+        }
+        setLoading(false);
+      });
+    return () => { isMounted = false; };
+  }, [agent.id]);
+
+  const specialites = [...new Set(listings.map(l => l.type).filter(Boolean))]
+    .map(t => TYPE_LABELS[t] ?? t);
+  const zones = [...new Set(listings.map(l => l.wilaya).filter(Boolean))];
+
   const initials = agent.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2);
 
   const callAgent = () => {
-    const phone = agent.phone ?? '+213555000000';
-    Linking.openURL(`tel:${phone}`).catch(() =>
+    if (!agent.phone) { Alert.alert('Indisponible', 'Numéro non renseigné.'); return; }
+    Linking.openURL(`tel:${agent.phone}`).catch(() =>
       Alert.alert('Erreur', 'Impossible d\'ouvrir le téléphone.')
     );
   };
 
   const whatsappAgent = () => {
-    const phone = (agent.phone ?? '+213555000000').replace(/\D/g, '');
+    if (!agent.phone) { Alert.alert('Indisponible', 'Numéro non renseigné.'); return; }
+    const phone = agent.phone.replace(/\D/g, '');
     Linking.openURL(`https://wa.me/${phone}?text=Bonjour, j'ai vu votre profil sur Darni.`)
       .catch(() => Alert.alert('Erreur', 'WhatsApp non disponible.'));
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F7F8FA' }}>
-      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={{ fontSize: 22, color: DARK }}>←</Text>
@@ -45,14 +94,11 @@ export function AgentProfileScreen({ route, navigation }: any) {
       <ScrollView showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}>
 
-        {/* Carte profil */}
         <View style={styles.profileCard}>
-          {/* Avatar large */}
           <View style={[styles.avatar, { backgroundColor: agent.color }]}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
 
-          {/* Nom + badges */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
             <Text style={styles.agentName}>{agent.name}</Text>
             {agent.verified && (
@@ -62,10 +108,8 @@ export function AgentProfileScreen({ route, navigation }: any) {
             )}
           </View>
 
-          <Text style={styles.agencyName}>{agent.agency}</Text>
           <Text style={styles.agentMeta}>{agent.wilaya}</Text>
 
-          {/* Stats */}
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
               <Text style={styles.statNum}>{agent.listings}</Text>
@@ -73,18 +117,12 @@ export function AgentProfileScreen({ route, navigation }: any) {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statNum}>4.8</Text>
-              <Text style={styles.statLabel}>Note</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statBox}>
-              <Text style={styles.statNum}>3 ans</Text>
-              <Text style={styles.statLabel}>Exp.</Text>
+              <Text style={styles.statNum}>{zones.length || 1}</Text>
+              <Text style={styles.statLabel}>Zone{zones.length > 1 ? 's' : ''}</Text>
             </View>
           </View>
         </View>
 
-        {/* Boutons contact */}
         <View style={styles.contactRow}>
           <TouchableOpacity style={styles.callBtn} onPress={callAgent}>
             <Text style={styles.callBtnText}>Appeler</Text>
@@ -94,50 +132,69 @@ export function AgentProfileScreen({ route, navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Spécialités */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Spécialités</Text>
-          <View style={styles.tagsRow}>
-            {['Appartements', 'Villas', 'Terrains'].map(tag => (
-              <View key={tag} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
+        {specialites.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Spécialités</Text>
+            <View style={styles.tagsRow}>
+              {specialites.map(tag => (
+                <View key={tag} style={styles.tag}>
+                  <Text style={styles.tagText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
-        {/* Wilayas couvertes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Zones couvertes</Text>
-          <View style={styles.tagsRow}>
-            {[agent.wilaya, 'Blida', 'Tipaza'].map(w => (
-              <View key={w} style={[styles.tag, { backgroundColor: '#EEF2FF' }]}>
-                <Text style={[styles.tagText, { color: BLUE }]}>{w}</Text>
-              </View>
-            ))}
+        {zones.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Zones couvertes</Text>
+            <View style={styles.tagsRow}>
+              {zones.map(w => (
+                <View key={w} style={[styles.tag, { backgroundColor: '#EEF2FF' }]}>
+                  <Text style={[styles.tagText, { color: BLUE }]}>{w}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
-        {/* À propos */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>À propos</Text>
-          <View style={styles.aboutCard}>
-            <Text style={styles.aboutText}>
-              Agent immobilier certifié avec {Math.floor(Math.random() * 5) + 2} ans d'expérience dans la région de {agent.wilaya}.
-              Spécialisé dans la vente et la location de biens résidentiels et commerciaux.
-              Disponible 7j/7 pour accompagner vos projets immobiliers.
-            </Text>
-          </View>
-        </View>
-
-        {/* Annonces récentes — placeholder */}
         <View style={[styles.section, { marginBottom: 8 }]}>
           <Text style={styles.sectionTitle}>Annonces récentes</Text>
-          <View style={styles.aboutCard}>
-            <Text style={{ color: GRAY_LT, fontSize: 14, textAlign: 'center', paddingVertical: 12 }}>
-              Les annonces de cet agent s'afficheront ici.
-            </Text>
-          </View>
+
+          {loading && (
+            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+              <ActivityIndicator color={BLUE} />
+            </View>
+          )}
+
+          {!loading && error !== '' && (
+            <View style={styles.aboutCard}>
+              <Text style={{ color: '#991B1B', fontSize: 13, textAlign: 'center' }}>{error}</Text>
+            </View>
+          )}
+
+          {!loading && error === '' && listings.length === 0 && (
+            <View style={styles.aboutCard}>
+              <Text style={{ color: GRAY_LT, fontSize: 14, textAlign: 'center', paddingVertical: 12 }}>
+                Aucune annonce active pour le moment.
+              </Text>
+            </View>
+          )}
+
+          {!loading && listings.slice(0, 5).map(listing => (
+            <TouchableOpacity
+              key={listing.id}
+              style={styles.listingRow}
+              onPress={() => navigation.navigate('ListingDetail', { listing })}
+            >
+              <Image source={{ uri: firstPhoto(listing) }} style={styles.listingPhoto} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.listingTitle} numberOfLines={1}>{listing.title}</Text>
+                <Text style={styles.listingPrice}>{smartPrice(listing.price, listing.transaction)}</Text>
+                <Text style={styles.listingMeta}>{listing.wilaya}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
 
       </ScrollView>
@@ -154,8 +211,7 @@ const styles = StyleSheet.create({
   avatar:        { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center' },
   avatarText:    { color: '#fff', fontSize: 30, fontWeight: '800' },
   agentName:     { fontSize: 20, fontWeight: '800', color: DARK },
-  agencyName:    { fontSize: 15, color: GRAY, marginTop: 4 },
-  agentMeta:     { fontSize: 13, color: GRAY_LT, marginTop: 2 },
+  agentMeta:     { fontSize: 13, color: GRAY_LT, marginTop: 4 },
   verifiedBadge: { backgroundColor: '#D1FAE5', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   verifiedText:  { fontSize: 12, color: '#065F46', fontWeight: '700' },
 
@@ -177,5 +233,10 @@ const styles = StyleSheet.create({
   tag:          { backgroundColor: '#F3F4F6', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
   tagText:      { fontSize: 13, color: GRAY, fontWeight: '500' },
   aboutCard:    { backgroundColor: '#fff', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: BORDER },
-  aboutText:    { fontSize: 14, color: GRAY, lineHeight: 22 },
+
+  listingRow:    { flexDirection: 'row', gap: 12, backgroundColor: '#fff', borderRadius: 12, padding: 10, borderWidth: 1, borderColor: BORDER, marginBottom: 8, alignItems: 'center' },
+  listingPhoto:  { width: 56, height: 56, borderRadius: 8, backgroundColor: '#F3F4F6' },
+  listingTitle:  { fontSize: 13, fontWeight: '600', color: DARK },
+  listingPrice:  { fontSize: 14, fontWeight: '800', color: BLUE, marginTop: 2 },
+  listingMeta:   { fontSize: 12, color: GRAY_LT, marginTop: 2 },
 });
