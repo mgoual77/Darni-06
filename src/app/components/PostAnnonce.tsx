@@ -299,7 +299,7 @@ export default function PostAnnonce() {
       const { error: insertError } = await supabase.from('listings').insert({
         user_id: user.id, title: autoTitle, description: form.description.trim(),
         type: form.type, transaction: form.transaction,
-        document_type: form.document_types[0] || null, document_types: form.document_types,
+        document_type: form.document_types[0] || null,
         price: Number(form.price.replace(/\s/g, '')), surface: parseFloat(form.surface),
         rooms: form.rooms ? parseInt(form.rooms) : null,
         bedrooms: form.bedrooms ? parseInt(form.bedrooms) : null,
@@ -310,8 +310,6 @@ export default function PostAnnonce() {
         amenities: form.amenities, photos: photoUrls,
         phone: form.phone.trim(), whatsapp: form.whatsapp.trim() || null,
         status: 'active',
-        // ✅ Les admins peuvent mettre leurs annonces directement en vedette
-        featured: isAdmin ? false : false,
       })
 
       if (insertError) {
