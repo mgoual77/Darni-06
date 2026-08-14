@@ -18,6 +18,7 @@ import { AgentsScreen }         from './screens/AgentsScreen';
 import { AgentProfileScreen }   from './screens/AgentProfileScreen';
 import { LoginScreen }          from './screens/LoginScreen';
 import { ProfileScreen }        from './screens/ProfileScreen';
+import { MesAnnoncesScreen }    from './screens/MesAnnoncesScreen';
 import { MoreScreen }           from './screens/MoreScreen';
 import { MapScreen }            from './screens/MapScreen';
 import { AboutScreen }          from './screens/AboutScreen';
@@ -183,6 +184,7 @@ export default function App() {
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           <Stack.Screen name="ListingDetail" component={ListingDetailScreen} />
           <Stack.Screen name="Agences"       component={AgentsScreen}        />
+          <Stack.Screen name="MesAnnonces"   component={MesAnnoncesScreen}   />
           <Stack.Screen name="AgentProfile"  component={AgentProfileScreen}  />
           <Stack.Screen name="Map"           component={MapScreen}           />
           <Stack.Screen name="About"         component={AboutScreen}         />
