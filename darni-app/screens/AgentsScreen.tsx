@@ -7,8 +7,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Activi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 
-const BLUE = '#1B4FD8'; const DARK = '#111827';
-const GRAY = '#6B7280'; const GRAY_LT = '#9CA3AF'; const BORDER = '#E5E7EB';
+import { BLUE, DARK, GRAY, GRAY_LT, BORDER } from '../lib/theme';
 
 // Palette de couleurs d'avatar assignée de façon stable par agent (pas de champ "color" en base)
 const AVATAR_COLORS = ['#4A90D9', '#E8A87C', '#7BB8A0', '#D4789C', '#5E8BC8', '#9B7EC8'];

@@ -6,9 +6,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
-
-const BLUE = '#1B4FD8'; const DARK = '#111827';
-const GRAY = '#6B7280'; const GRAY_LT = '#9CA3AF'; const BORDER = '#E5E7EB';
+import { BLUE, DARK, GRAY, GRAY_LT, BORDER } from '../lib/theme';
 
 export function ResetPasswordScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();

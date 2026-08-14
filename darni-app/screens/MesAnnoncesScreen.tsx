@@ -10,30 +10,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
+import { BLUE, DARK, GRAY, GRAY_LT, BORDER, BG } from '../lib/theme';
+import { smartPrice, firstPhoto } from '../lib/format';
 
-const BLUE    = '#1B4FD8';
-const DARK    = '#111827';
-const GRAY    = '#6B7280';
-const GRAY_LT = '#9CA3AF';
-const BORDER  = '#E5E7EB';
-const BG      = '#F7F8FA';
-const GREEN   = '#16A34A';
-const RED     = '#EF4444';
-
-function smartPrice(price: number, transaction?: string): string {
-  if (!price) return '— DA';
-  const s = transaction === 'location' ? '/mois' : '';
-  if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1).replace('.0', '')} Mrd DA${s}`;
-  if (price >= 1_000_000)     return `${(price / 1_000_000).toFixed(1).replace('.0', '')} M DA${s}`;
-  return price.toLocaleString('fr-DZ') + ` DA${s}`;
-}
-
-function firstPhoto(listing: any): string {
-  const fb = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800';
-  const p = listing.photos;
-  if (!p || !Array.isArray(p) || p.length === 0) return fb;
-  return typeof p[0] === 'string' ? p[0] : (p[0]?.url ?? fb);
-}
+const GREEN = '#16A34A';
+const RED   = '#EF4444';
 
 export function MesAnnoncesScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();

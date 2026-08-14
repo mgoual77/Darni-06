@@ -7,31 +7,18 @@ import {
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
+import { BLUE, DARK, GRAY, GRAY_LT, BORDER, BG } from '../lib/theme';
+import { WILAYAS } from '../lib/wilayas';
+import { TYPE_LABELS } from '../lib/labels';
+import { GOOGLE_PLACES_API_KEY } from '../lib/config';
 
 const { width } = Dimensions.get('window');
-const BLUE     = '#1B4FD8';
-const DARK     = '#111827';
-const GRAY     = '#6B7280';
-const GRAY_LT  = '#9CA3AF';
-const BORDER   = '#E5E7EB';
-const BG       = '#F7F8FA';
 const MAX_FREE = 5;
-const GOOGLE_API_KEY = 'AIzaSyCbCrbbocArzRzzr0MYohUw6h0goJEhKlc';
+const GOOGLE_API_KEY = GOOGLE_PLACES_API_KEY;
 
-const TYPES = [
-  { key: 'appartement', label: 'Appartement' },
-  { key: 'villa',       label: 'Villa'        },
-  { key: 'bureau',      label: 'Bureau'       },
-  { key: 'local',       label: 'Local commercial' },
-  { key: 'terrain',     label: 'Terrain'      },
-  { key: 'autre',       label: 'Autre'        },
-];
-
-const WILAYAS = [
-  'Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Sétif',
-  'Tizi Ouzou', 'Béjaïa', 'Batna', 'Tlemcen', 'Djelfa', 'Biskra',
-  'Médéa', 'Mostaganem', "M'Sila",
-];
+// Note : liste complète des 48 wilayas (lib/wilayas.ts) — un champ obligatoire de
+// publication doit couvrir toutes les wilayas, pas seulement les plus grandes villes.
+const TYPES = Object.entries(TYPE_LABELS).map(([key, label]) => ({ key, label }));
 
 const STEPS = ['Type', 'Détails', 'Contact'];
 

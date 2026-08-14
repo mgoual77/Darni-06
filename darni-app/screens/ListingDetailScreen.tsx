@@ -7,53 +7,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { fetchVerifiedUserIds } from '../lib/verifiedSellers';
+import { BLUE, DARK, GRAY, GRAY_LT, BORDER, BG } from '../lib/theme';
+import { smartPrice, getPhotos, buildWA, buildTel } from '../lib/format';
+import { TYPE_LABELS, AMENITY_LABELS } from '../lib/labels';
 
 const { width, height } = Dimensions.get('window');
-const BLUE = '#1B4FD8';
-const DARK = '#111827';
-const GRAY = '#6B7280';
-const GRAY_LT = '#9CA3AF';
-const BORDER = '#E5E7EB';
-const BG = '#F7F8FA';
-
-const TYPE_LABELS: Record<string, string> = {
-  appartement: 'Appartement', villa: 'Villa', bureau: 'Bureau',
-  local: 'Local commercial', terrain: 'Terrain', autre: 'Autre',
-};
-
-const AMENITY_LABELS: Record<string, string> = {
-  ascenseur: 'Ascenseur', parking: 'Parking', balcon: 'Balcon',
-  terrasse: 'Terrasse', jardin: 'Jardin', piscine: 'Piscine',
-  securite: 'Sécurité', meuble: 'Meublé', climatisation: 'Climatisation', cave: 'Cave',
-};
-
-function smartPrice(price: number, transaction?: string): string {
-  if (!price) return '— DA';
-  const suffix = transaction === 'location' ? '/mois' : '';
-  if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1).replace('.0', '')} Mrd DA${suffix}`;
-  if (price >= 1_000_000) return `${(price / 1_000_000).toFixed(1).replace('.0', '')} M DA${suffix}`;
-  return price.toLocaleString('fr-DZ') + ` DA${suffix}`;
-}
-
-function getPhotos(listing: any): string[] {
-  const fb = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900';
-  const photos = listing.photos;
-  if (!photos || !Array.isArray(photos) || photos.length === 0) return [fb];
-  const urls = photos.map((p: any) => typeof p === 'string' ? p : p?.url ?? '').filter(Boolean);
-  return urls.length ? urls : [fb];
-}
-
-function buildWA(raw: string | null): string {
-  if (!raw) return '';
-  const d = raw.replace(/\D/g, '');
-  return `https://wa.me/${d.startsWith('213') ? d : d.startsWith('0') ? '213' + d.slice(1) : '213' + d}`;
-}
-
-function buildTel(raw: string | null): string {
-  if (!raw) return '';
-  const d = raw.replace(/\D/g, '');
-  return `tel:+${d.startsWith('213') ? d : d.startsWith('0') ? '213' + d.slice(1) : '213' + d}`;
-}
 
 export function ListingDetailScreen({ route, navigation }: any) {
   const insets = useSafeAreaInsets();

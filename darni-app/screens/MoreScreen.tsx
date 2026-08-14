@@ -8,9 +8,7 @@ import {
   StyleSheet, Alert, I18nManager,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const BLUE = '#1B4FD8'; const DARK = '#111827';
-const GRAY = '#6B7280'; const BORDER = '#E5E7EB';
+import { BLUE, DARK, GRAY, BORDER } from '../lib/theme';
 
 const LANGUAGES = [
   { code: 'fr', label: 'Français', flag: '🇫🇷' },

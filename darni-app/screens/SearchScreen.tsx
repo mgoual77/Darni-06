@@ -7,14 +7,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { fetchVerifiedUserIds } from '../lib/verifiedSellers';
+import { BLUE, DARK, GRAY, GRAY_LT, BORDER, BG } from '../lib/theme';
+import { smartPrice, firstPhoto, getPhotos } from '../lib/format';
+import { POPULAR_WILAYAS } from '../lib/wilayas';
 
 const { width } = Dimensions.get('window');
-const BLUE = '#1B4FD8'; const DARK = '#111827';
-const GRAY = '#6B7280'; const GRAY_LT = '#9CA3AF';
-const BORDER = '#E5E7EB'; const BG = '#F7F8FA';
 
 const TYPES = ['Appartement', 'Villa', 'Bureau', 'Local', 'Terrain', 'Autre'];
-const WILAYAS = ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Sétif', 'Tizi Ouzou', 'Béjaïa', 'Batna', 'Tlemcen'];
+const WILAYAS = POPULAR_WILAYAS;
 const PRICE_RANGES = [
   { label: '< 1M DA',   min: '',         max: '1000000'  },
   { label: '1–3M DA',  min: '1000000',  max: '3000000'  },
@@ -23,27 +23,6 @@ const PRICE_RANGES = [
   { label: '10–20M DA',min: '10000000', max: '20000000' },
   { label: '> 20M DA', min: '20000000', max: ''         },
 ];
-
-function smartPrice(price: number, transaction?: string): string {
-  if (!price) return '— DA';
-  const suffix = transaction === 'location' ? '/mois' : '';
-  if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1).replace('.0', '')} Mrd DA${suffix}`;
-  if (price >= 1_000_000)     return `${(price / 1_000_000).toFixed(1).replace('.0', '')} M DA${suffix}`;
-  return price.toLocaleString('fr-DZ') + ` DA${suffix}`;
-}
-function firstPhoto(listing: any): string {
-  const fb = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800';
-  const photos = listing.photos;
-  if (!photos || !Array.isArray(photos) || photos.length === 0) return fb;
-  const p = photos[0];
-  return typeof p === 'string' ? p : p?.url ?? fb;
-}
-function getPhotos(listing: any): string[] {
-  const fb = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800';
-  const photos = listing.photos;
-  if (!photos || !Array.isArray(photos) || photos.length === 0) return [fb];
-  return photos.map((p: any) => typeof p === 'string' ? p : p?.url ?? '').filter(Boolean);
-}
 function isNew(created_at?: string): boolean {
   if (!created_at) return false;
   return Date.now() - new Date(created_at).getTime() < 48 * 60 * 60 * 1000;

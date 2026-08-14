@@ -10,9 +10,7 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
-
-const BLUE = '#1B4FD8'; const DARK = '#111827';
-const GRAY = '#6B7280'; const BORDER = '#E5E7EB';
+import { BLUE, DARK, GRAY, BORDER } from '../lib/theme';
 
 const WILAYA_COORDS: Record<string, { lat: number; lng: number }> = {
   'alger':       { lat: 36.7538, lng:  3.0588 },
@@ -61,6 +59,8 @@ function getCoords(listing: any): { latitude: number; longitude: number } {
   };
 }
 
+// Variante compacte de smartPrice (lib/format.ts) : les bulles de prix sur la carte
+// ont très peu de place, donc suffixes raccourcis ('–'/'/m' au lieu de '— DA'/'/mois').
 function smartPrice(price: number, transaction?: string): string {
   if (!price) return '–';
   const s = transaction === 'location' ? '/m' : '';

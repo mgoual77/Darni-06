@@ -13,33 +13,16 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { supabase } from '../lib/supabase';
+import { BLUE, DARK, GRAY, GRAY_LT, BORDER, BG } from '../lib/theme';
+import { smartPrice, firstPhoto } from '../lib/format';
+import { POPULAR_WILAYAS } from '../lib/wilayas';
+import { GOOGLE_PLACES_API_KEY } from '../lib/config';
 
 const { width: W } = Dimensions.get('window');
-const BLUE     = '#1B4FD8';
-const DARK     = '#111827';
-const GRAY     = '#6B7280';
-const GRAY_LT  = '#9CA3AF';
-const BORDER   = '#E5E7EB';
-const BG       = '#F7F8FA';
-const GOOGLE_KEY = 'AIzaSyCbCrbbocArzRzzr0MYohUw6h0goJEhKlc';
+const GOOGLE_KEY = GOOGLE_PLACES_API_KEY;
 
-const WILAYAS   = ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Sétif'];
+const WILAYAS   = POPULAR_WILAYAS.slice(0, 6);
 const HERO_TABS = ['Propriétés', 'Nouveaux', 'Agences'];
-
-function smartPrice(price: number, transaction?: string): string {
-  if (!price) return '— DA';
-  const s = transaction === 'location' ? '/mois' : '';
-  if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1).replace('.0', '')} Mrd DA${s}`;
-  if (price >= 1_000_000)     return `${(price / 1_000_000).toFixed(1).replace('.0', '')} M DA${s}`;
-  return price.toLocaleString('fr-DZ') + ` DA${s}`;
-}
-
-function firstPhoto(listing: any): string {
-  const fb = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800';
-  const p = listing.photos;
-  if (!p || !Array.isArray(p) || p.length === 0) return fb;
-  return typeof p[0] === 'string' ? p[0] : (p[0]?.url ?? fb);
-}
 
 export function HomeScreen({ navigation }: any) {
   const insets    = useSafeAreaInsets();
