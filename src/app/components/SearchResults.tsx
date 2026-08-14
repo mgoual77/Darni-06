@@ -4,36 +4,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { fetchVerifiedUserIds } from '../../lib/verifiedSellers';
 import { useSEO } from '../../hooks/useSEO'
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  return isMobile;
-}
-
-function firstPhoto(listing: any): string {
-  const photos = listing.photos;
-  const fb = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800';
-  if (!photos) return fb;
-  if (Array.isArray(photos) && photos.length > 0) {
-    const p = photos[0];
-    return typeof p === 'string' ? p : p?.url ?? fb;
-  }
-  return fb;
-}
-
-function smartPrice(price: number, transaction?: string): string {
-  if (!price) return '— DA';
-  const suffix = transaction === 'location' ? '/mois' : '';
-  if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1).replace('.0', '')} Mrd DA${suffix}`;
-  if (price >= 1_000_000)     return `${(price / 1_000_000).toFixed(1).replace('.0', '')} M DA${suffix}`;
-  return price.toLocaleString('fr-DZ') + ` DA${suffix}`;
-}
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { firstPhoto } from '../../utils/listingHelpers';
+import { formatPrice } from '../../utils/formatPrice';
 
 function isNew(created_at?: string): boolean {
   if (!created_at) return false;
@@ -113,7 +86,7 @@ export function SearchResults() {
   if (filterType)        activeChips.push({ label: capitalize(filterType),        onRemove: () => setFilterType('') });
   if (filterWilaya)      activeChips.push({ label: filterWilaya,                  onRemove: () => setFilterWilaya('') });
   if (priceMin || priceMax) activeChips.push({
-    label: `${priceMin ? smartPrice(Number(priceMin)) : '0'} – ${priceMax ? smartPrice(Number(priceMax)) : '∞'}`,
+    label: `${priceMin ? formatPrice(Number(priceMin)) : '0'} – ${priceMax ? formatPrice(Number(priceMax)) : '∞'}`,
     onRemove: () => { setPriceMin(''); setPriceMax(''); }
   });
   if (searchText) activeChips.push({ label: `"${searchText}"`, onRemove: () => setSearchText('') });
@@ -371,7 +344,7 @@ export function SearchResults() {
 
                 {/* Photo */}
                 <div style={{ position: 'relative', width: isMobile ? '100%' : 240, height: isMobile ? 190 : 'auto', flexShrink: 0, minHeight: isMobile ? 0 : 160, background: '#F5F0E8' }}>
-                  <img src={firstPhoto(listing)} alt={listing.title ?? ''}
+                  <img src={firstPhoto(listing.photos)} alt={listing.title ?? ''}
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                     onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'; }} />
 
@@ -408,7 +381,7 @@ export function SearchResults() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
                       <div>
                         <div style={{ fontSize: isMobile ? '1.6rem' : '1.9rem', fontWeight: 900, color: '#1B4FD8', lineHeight: 1.1 }}>
-                          {smartPrice(listing.price, listing.transaction)}
+                          {formatPrice(listing.price, listing.transaction)}
                         </div>
                         <div style={{ fontSize: '1.2rem', color: '#9CA3AF', marginTop: 1 }}>
                           {listing.transaction === 'location' ? 'Loyer mensuel' : 'Prix de vente'}

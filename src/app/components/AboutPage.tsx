@@ -3,17 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ArrowRight, CheckCircle, X, Home, Building2, Users, MapPin, TrendingUp, Shield, Zap, Heart, Globe, Award } from 'lucide-react';
 import { useSEO } from '../../hooks/useSEO'
 import { supabase } from '../../lib/supabase';
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  return isMobile;
-}
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 function useCountUp(target: number, duration: number = 2000, start: boolean = false) {
   const [count, setCount] = useState(0);

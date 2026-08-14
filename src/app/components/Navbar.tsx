@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { AuthModal } from './AuthModal';
 import { useState, useEffect } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const NAV_LINKS = [
   { label: 'Acheter',    to: '/search',   badge: null   },
@@ -10,17 +11,6 @@ const NAV_LINKS = [
   { label: 'Samsara',    to: '/samsara',  badge: 'NEW'  },
   { label: 'Estimation', to: '/a-propos', badge: 'BETA' },
 ];
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  return isMobile;
-}
 
 export function Navbar() {
   const location = useLocation();

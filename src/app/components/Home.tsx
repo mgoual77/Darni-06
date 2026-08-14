@@ -3,17 +3,9 @@ import { Search, ArrowRight, ChevronDown, Mail, Phone, MapPin, Instagram, Twitte
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useSEO } from '../../hooks/useSEO'
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  return isMobile;
-}
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { firstPhoto } from '../../utils/listingHelpers';
+import { formatPrice } from '../../utils/formatPrice';
 
 const HERO_TABS = [
   { label: 'Propriétés',     badge: null   },
@@ -100,23 +92,8 @@ const BADGE_COLORS: Record<string, string> = {
   terrain: 'linear-gradient(135deg, #1B4FD8, #0369a1)',
 };
 
-function smartPrice(price: number): string {
-  if (!price) return '— DA';
-  if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1).replace('.0', '')} Mrd DA`;
-  if (price >= 1_000_000)     return `${(price / 1_000_000).toFixed(1).replace('.0', '')} M DA`;
-  return price.toLocaleString('fr-DZ') + ' DA';
-}
-
-function firstPhoto(listing: any): string {
-  const photos = listing.photos;
-  if (!photos || !Array.isArray(photos) || photos.length === 0) return '/placeholder.jpg';
-  const p = photos[0];
-  if (typeof p === 'string') return p;
-  return p?.url ?? '/placeholder.jpg';
-}
-
 function withImage(listing: any) {
-  return { ...listing, image: firstPhoto(listing) };
+  return { ...listing, image: firstPhoto(listing.photos) };
 }
 
 // Liens footer avec routes
@@ -485,7 +462,7 @@ export function Home() {
                         <div style={{ marginBottom: 10 }}>
                           <p style={{ fontSize: '1rem', color: '#9CA3AF', marginBottom: 2 }}>Prix</p>
                           <p style={{ fontSize: isMobile ? '1.3rem' : '1.5rem', fontWeight: 800, color: '#1B4FD8' }}>
-                            {smartPrice(listing.price)}
+                            {formatPrice(listing.price, listing.transaction)}
                           </p>
                         </div>
                         <button onClick={e => e.stopPropagation()}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { formatPrice } from '../../utils/formatPrice'
+import { firstPhoto } from '../../utils/listingHelpers'
 
 interface Listing {
   id: string
@@ -33,15 +34,6 @@ const BG      = '#F7F8FA'
 const TYPE_LABELS: Record<string, string> = {
   appartement: 'Appartement', villa: 'Villa', bureau: 'Bureau',
   local: 'Local commercial', terrain: 'Terrain', autre: 'Autre',
-}
-
-function firstPhoto(photos: any[]): string {
-  if (!photos || !Array.isArray(photos) || photos.length === 0)
-    return 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=700'
-  const p = photos[0]
-  if (typeof p === 'string') return p
-  if (p?.url) return p.url
-  return 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=700'
 }
 
 function buildWhatsapp(raw: string | null): string {

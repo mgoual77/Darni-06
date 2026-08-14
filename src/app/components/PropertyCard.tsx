@@ -1,6 +1,8 @@
 import { MapPin, Bed, Square, Bookmark, Phone, MessageCircle, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { formatPrice } from '../../utils/formatPrice';
 
 interface PropertyCardProps {
   id: number;
@@ -17,24 +19,6 @@ interface PropertyCardProps {
   transaction?: string;
   views_count?: number;
   created_at?: string;
-}
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  return isMobile;
-}
-
-function smartPrice(price: number): string {
-  if (!price) return '— DA';
-  if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1).replace('.0', '')} Mrd DA`;
-  if (price >= 1_000_000)     return `${(price / 1_000_000).toFixed(1).replace('.0', '')} M DA`;
-  return price.toLocaleString('fr-DZ') + ' DA';
 }
 
 const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
@@ -125,7 +109,7 @@ export function PropertyCard({
             <div style={{ position: 'absolute', bottom: 10, left: 10, right: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
                 <span style={{ fontSize: '1.6rem', fontWeight: 900, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
-                  {smartPrice(price)}
+                  {formatPrice(price, transaction)}
                 </span>
               </div>
               {/* Logo agence */}
@@ -223,7 +207,7 @@ export function PropertyCard({
                 <span style={{ fontSize: '1.2rem', color: '#9CA3AF', display: 'block', marginBottom: 2 }}>
                   {transaction === 'vente' || type === 'Vente' ? 'Prix de vente' : 'Loyer mensuel'}
                 </span>
-                <span style={{ fontSize: isMobile ? '1.7rem' : '2rem', fontWeight: 900, color: '#1B4FD8' }}>{smartPrice(price)}</span>
+                <span style={{ fontSize: isMobile ? '1.7rem' : '2rem', fontWeight: 900, color: '#1B4FD8' }}>{formatPrice(price, transaction)}</span>
                 {(transaction === 'location' || type === 'Location') && (
                   <span style={{ fontSize: '1.2rem', color: '#9CA3AF' }}>/mois</span>
                 )}
@@ -302,7 +286,7 @@ export function PropertyCard({
         <div style={{ padding: '14px 16px' }}>
           <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#374151', marginBottom: 4 }}>{capitalize(type)}</p>
           <div style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#1B4FD8' }}>{smartPrice(price)}</span>
+            <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#1B4FD8' }}>{formatPrice(price, transaction)}</span>
             {(transaction === 'location' || type === 'Location') && (
               <span style={{ fontSize: '1.2rem', color: '#9CA3AF' }}>/mois</span>
             )}

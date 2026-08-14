@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { formatPrice } from '../../utils/formatPrice';
+import { firstPhoto } from '../../utils/listingHelpers';
 
 interface OwnListing {
   id: string;
@@ -31,15 +32,6 @@ const cardStyle: React.CSSProperties = {
   borderRadius: 16,
   boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
 };
-
-function firstPhoto(photos: any[]): string {
-  if (!photos || !Array.isArray(photos) || photos.length === 0)
-    return 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=700';
-  const p = photos[0];
-  if (typeof p === 'string') return p;
-  if (p?.url) return p.url;
-  return 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=700';
-}
 
 export function Profile() {
   const navigate = useNavigate();

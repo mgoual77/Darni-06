@@ -3,17 +3,7 @@ import { Search, MapPin, Phone, MessageCircle, ChevronDown, Shield, TrendingUp, 
 import { useNavigate } from 'react-router-dom';
 import { useSEO } from '../../hooks/useSEO'
 import { supabase } from '../../lib/supabase';
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  return isMobile;
-}
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const WILAYAS = ['Toutes', 'Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Sétif', 'Tizi Ouzou', 'Béjaïa', 'Tlemcen', 'Batna'];
 const TYPE_LABELS: Record<string, string> = {

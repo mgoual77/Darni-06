@@ -3,17 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { fetchVerifiedUserIds } from '../../lib/verifiedSellers'
 import { formatPrice } from '../../utils/formatPrice'
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false)
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-  return isMobile
-}
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 interface Listing {
   id: string; title: string; description: string; type: string; transaction: string;
