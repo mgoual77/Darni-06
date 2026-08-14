@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, SlidersHorizontal, ArrowUpDown, MapPin, Phone, MessageCircle, Bookmark, Search, ChevronDown, Map, X, Check } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { fetchVerifiedUserIds } from '../../lib/verifiedSellers';
 import { useSEO } from '../../hooks/useSEO'
 
 function useIsMobile() {
@@ -66,6 +67,7 @@ export function SearchResults() {
   const isMobile   = useIsMobile();
 
   const [listings, setListings]     = useState<any[]>([]);
+  const [verifiedUserIds, setVerifiedUserIds] = useState<Set<string>>(new Set());
   const [loading, setLoading]       = useState(true);
   const [sortBy, setSortBy]         = useState<SortOption>('recent');
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -121,7 +123,10 @@ export function SearchResults() {
       try {
         const { data, error } = await supabase.from('listings').select('*').eq('status', 'active').order('created_at', { ascending: false });
         if (error) console.error(error);
-        else setListings(data ?? []);
+        else {
+          setListings(data ?? []);
+          fetchVerifiedUserIds((data ?? []).map((l: any) => l.user_id)).then(setVerifiedUserIds);
+        }
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
@@ -379,11 +384,13 @@ export function SearchResults() {
                     )}
                   </div>
 
-                  {/* Vérifié — icône discrète en haut */}
-                  <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(255,255,255,0.9)', borderRadius: 5, padding: '2px 7px', display: 'flex', alignItems: 'center', gap: 3, backdropFilter: 'blur(4px)' }}>
-                    <Check style={{ width: 11, height: 11, color: '#059669' }} />
-                    <span style={{ fontSize: '1rem', fontWeight: 700, color: '#059669' }}>Vérifié</span>
-                  </div>
+                  {/* Vérifié — icône discrète en haut, uniquement si le vendeur a une vérification approuvée */}
+                  {verifiedUserIds.has(listing.user_id) && (
+                    <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(255,255,255,0.9)', borderRadius: 5, padding: '2px 7px', display: 'flex', alignItems: 'center', gap: 3, backdropFilter: 'blur(4px)' }}>
+                      <Check style={{ width: 11, height: 11, color: '#059669' }} />
+                      <span style={{ fontSize: '1rem', fontWeight: 700, color: '#059669' }}>Vérifié</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Contenu */}

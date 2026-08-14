@@ -12,6 +12,7 @@ interface PropertyCardProps {
   surface: number;
   rooms: number;
   bedrooms?: number;
+  verified?: boolean;
   variant?: 'default' | 'featured' | 'bayut';
   transaction?: string;
   views_count?: number;
@@ -73,7 +74,7 @@ function Badge({ type, transaction }: { type: string; transaction?: string }) {
 
 export function PropertyCard({
   id, image, price, type, wilaya, commune,
-  surface, rooms, bedrooms,
+  surface, rooms, bedrooms, verified,
   variant = 'default', transaction, views_count, created_at,
 }: PropertyCardProps) {
   const [isSaved, setIsSaved] = useState(false);
@@ -191,7 +192,9 @@ export function PropertyCard({
               onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'; setImgLoaded(true); }} />
 
             <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
-              <span style={{ background: 'rgba(255,255,255,0.95)', color: '#059669', fontSize: '0.9rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>✓ Vérifié</span>
+              {verified && (
+                <span style={{ background: 'rgba(255,255,255,0.95)', color: '#059669', fontSize: '0.9rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>✓ Vérifié</span>
+              )}
               <Badge type={type} transaction={transaction} />
             </div>
 

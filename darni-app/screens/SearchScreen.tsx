@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
+import { fetchVerifiedUserIds } from '../lib/verifiedSellers';
 
 const { width } = Dimensions.get('window');
 const BLUE = '#1B4FD8'; const DARK = '#111827';
@@ -76,6 +77,7 @@ export function SearchScreen({ route, navigation }: any) {
   const [showFilters,       setShowFilters]       = useState(false);
   const [showSort,          setShowSort]          = useState(false);
   const [savedIds,          setSavedIds]          = useState<string[]>([]);
+  const [verifiedUserIds,   setVerifiedUserIds]   = useState<Set<string>>(new Set());
 
   const [tmpTransaction, setTmpTransaction] = useState('');
   const [tmpType,        setTmpType]        = useState('');
@@ -85,7 +87,11 @@ export function SearchScreen({ route, navigation }: any) {
 
   useEffect(() => {
     supabase.from('listings').select('*').order('created_at', { ascending: false })
-      .then(({ data }) => { setListings(data ?? []); setLoading(false); });
+      .then(({ data }) => {
+        setListings(data ?? []);
+        setLoading(false);
+        fetchVerifiedUserIds((data ?? []).map((l: any) => l.user_id)).then(setVerifiedUserIds);
+      });
   }, []);
 
   let filtered = listings;
@@ -289,7 +295,9 @@ export function SearchScreen({ route, navigation }: any) {
                     </View>
                     {newListing && <View style={[styles.badge, { backgroundColor: '#DC2626' }]}><Text style={styles.badgeText}>Nouveau</Text></View>}
                   </View>
-                  <View style={styles.verifiedBadge}><Text style={styles.verifiedText}>✓ Vérifié</Text></View>
+                  {verifiedUserIds.has(l.user_id) && (
+                    <View style={styles.verifiedBadge}><Text style={styles.verifiedText}>✓ Vérifié</Text></View>
+                  )}
                   <TouchableOpacity style={styles.saveBtn}
                     onPress={() => setSavedIds(prev => prev.includes(l.id) ? prev.filter(i => i !== l.id) : [...prev, l.id])}>
                     <Text style={{ fontSize: 16, color: isSaved ? '#EF4444' : '#fff' }}>{isSaved ? '♥' : '♡'}</Text>

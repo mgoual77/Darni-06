@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
   StyleSheet, Dimensions, Linking, FlatList,
   StatusBar, Share, Modal
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { supabase } from '../lib/supabase';
+import { fetchVerifiedUserIds } from '../lib/verifiedSellers';
 
 const { width, height } = Dimensions.get('window');
 const BLUE = '#1B4FD8';
@@ -61,6 +63,18 @@ export function ListingDetailScreen({ route, navigation }: any) {
   const [saved, setSaved] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
+  const [sellerVerified, setSellerVerified] = useState(false);
+  const [sellerPro, setSellerPro] = useState(false);
+  const [sellerName, setSellerName] = useState('Vendeur Darni');
+
+  useEffect(() => {
+    if (!listing.user_id) return;
+    supabase.from('profiles').select('full_name').eq('id', listing.user_id).single()
+      .then(({ data }) => { if (data?.full_name) setSellerName(data.full_name); });
+    fetchVerifiedUserIds([listing.user_id]).then(ids => setSellerVerified(ids.has(listing.user_id)));
+    supabase.from('subscriptions').select('user_id').eq('user_id', listing.user_id).eq('status', 'active').eq('plan', 'pro')
+      .then(({ data }) => setSellerPro(!!data && data.length > 0));
+  }, [listing.user_id]);
 
   const phone = listing.phone ?? listing.whatsapp ?? null;
   const waLink = buildWA(listing.whatsapp ?? listing.phone);
@@ -174,9 +188,11 @@ export function ListingDetailScreen({ route, navigation }: any) {
                 {listing.transaction === 'location' ? 'Location' : 'Vente'}
               </Text>
             </View>
-            <View style={[styles.badge, { backgroundColor: '#059669' }]}>
-              <Text style={styles.badgeText}>✓ Vérifié</Text>
-            </View>
+            {sellerVerified && (
+              <View style={[styles.badge, { backgroundColor: '#059669' }]}>
+                <Text style={styles.badgeText}>✓ Vérifié</Text>
+              </View>
+            )}
           </View>
 
           <Text style={styles.price}>{smartPrice(listing.price, listing.transaction)}</Text>
@@ -251,18 +267,24 @@ export function ListingDetailScreen({ route, navigation }: any) {
         <View style={styles.agentCard}>
           <View style={styles.agentHeader}>
             <View style={styles.agentAvatar}>
-              <Text style={styles.agentAvatarText}>D</Text>
+              <Text style={styles.agentAvatarText}>{sellerName.charAt(0).toUpperCase()}</Text>
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.agentName}>Vendeur Darni</Text>
-              <View style={styles.agentBadges}>
-                <View style={styles.agentBadge}>
-                  <Text style={styles.agentBadgeText}>✓ Vérifié</Text>
+              <Text style={styles.agentName}>{sellerName}</Text>
+              {(sellerVerified || sellerPro) && (
+                <View style={styles.agentBadges}>
+                  {sellerVerified && (
+                    <View style={styles.agentBadge}>
+                      <Text style={styles.agentBadgeText}>✓ Vérifié</Text>
+                    </View>
+                  )}
+                  {sellerPro && (
+                    <View style={[styles.agentBadge, { backgroundColor: '#FEF3C7' }]}>
+                      <Text style={[styles.agentBadgeText, { color: '#92400E' }]}>Pro</Text>
+                    </View>
+                  )}
                 </View>
-                <View style={[styles.agentBadge, { backgroundColor: '#FEF3C7' }]}>
-                  <Text style={[styles.agentBadgeText, { color: '#92400E' }]}>Pro</Text>
-                </View>
-              </View>
+              )}
             </View>
           </View>
         </View>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { fetchVerifiedUserIds } from '../../lib/verifiedSellers'
 import { formatPrice } from '../../utils/formatPrice'
 
 function useIsMobile() {
@@ -142,6 +143,8 @@ export default function ListingDetail() {
   const [showModal, setShowModal]       = useState(false)
   const [showFullDesc, setShowFullDesc] = useState(false)
   const [saved, setSaved]               = useState(false)
+  const [sellerVerified, setSellerVerified] = useState(false)
+  const [sellerName, setSellerName]     = useState('Vendeur Darni')
 
   // ── Fetch listing + SEO dynamique ────────────────────────────────────────
   useEffect(() => {
@@ -153,6 +156,11 @@ export default function ListingDetail() {
       .then(({ data, error }) => {
         if (!error && data) {
           setListing(data)
+          fetchVerifiedUserIds([data.user_id]).then(ids => setSellerVerified(ids.has(data.user_id)))
+          if (data.user_id) {
+            supabase.from('profiles').select('full_name').eq('id', data.user_id).single()
+              .then(({ data: profile }) => { if (profile?.full_name) setSellerName(profile.full_name) })
+          }
 
           // ── Patch SEO ──
           const photo = extractPhotos(data.photos)[0]
@@ -294,11 +302,13 @@ export default function ListingDetail() {
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.03)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
                   onError={e => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900' }} />
-                {/* Badge vérifié */}
+                {/* Badge vérifié — affiché uniquement si le vendeur a une vérification approuvée */}
                 <div style={{ position: 'absolute', top: 14, left: 14, display: 'flex', gap: 6 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'linear-gradient(135deg, #1B4FD8, #3B6FE8)', color: '#fff', fontSize: '1rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6 }}>
-                    <IcoCheck /> <span style={{ color: '#fff' }}>Vérifié Darni</span>
-                  </span>
+                  {sellerVerified && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'linear-gradient(135deg, #1B4FD8, #3B6FE8)', color: '#fff', fontSize: '1rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6 }}>
+                      <IcoCheck /> <span style={{ color: '#fff' }}>Vérifié Darni</span>
+                    </span>
+                  )}
                   <GradientBadge label={listing.transaction === 'vente' ? 'Vente' : 'Location'} variant="secondary" />
                 </div>
                 {/* Bouton voir toutes photos */}
@@ -478,15 +488,17 @@ export default function ListingDetail() {
               {/* Header sidebar — dégradé Darni */}
               <div style={{ background: 'linear-gradient(135deg, #0F2D4A 0%, #1B4FD8 100%)', padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 18, flexShrink: 0 }}>
-                  D
+                  {sellerName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p style={{ fontWeight: 800, color: '#fff', fontSize: 15, margin: '0 0 2px' }}>Vendeur Darni</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 4, padding: '2px 7px', fontSize: 11, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
-                      <IcoCheck /> <span style={{ color: 'rgba(255,255,255,0.9)' }}>Membre vérifié</span>
-                    </span>
-                  </div>
+                  <p style={{ fontWeight: 800, color: '#fff', fontSize: 15, margin: '0 0 2px' }}>{sellerName}</p>
+                  {sellerVerified && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 4, padding: '2px 7px', fontSize: 11, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+                        <IcoCheck /> <span style={{ color: 'rgba(255,255,255,0.9)' }}>Membre vérifié</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 

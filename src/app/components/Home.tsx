@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Search, ArrowRight, ChevronDown, Mail, Phone, MapPin, Instagram, Twitter, Facebook } from 'lucide-react';
-import { PropertyCard } from './PropertyCard';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useSEO } from '../../hooks/useSEO'
