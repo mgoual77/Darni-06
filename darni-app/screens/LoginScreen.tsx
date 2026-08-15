@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import Svg, { Path } from 'react-native-svg';
 import { supabase } from '../lib/supabase';
 import { BLUE, DARK, GRAY, GRAY_LT, BORDER } from '../lib/theme';
@@ -65,7 +66,9 @@ export function LoginScreen({ navigation }: any) {
   const signInWithGoogle = async () => {
     setGoogleLoading(true); setError('');
     try {
-      const redirectUrl = 'darni://';
+      // createURL() renvoie exp://<hôte>/--/ sous Expo Go et darni:// en build natif :
+      // un scheme figé en dur ne reviendrait jamais dans l'app pendant les tests Expo Go.
+      const redirectUrl = Linking.createURL('/');
       const { data, error: err } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: redirectUrl, skipBrowserRedirect: true },
@@ -93,7 +96,7 @@ export function LoginScreen({ navigation }: any) {
     if (!email) { setError("Entrez votre email d'abord."); return; }
     setLoading(true); setError(''); setSuccess('');
     const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'darni://reset-password',
+      redirectTo: Linking.createURL('/reset-password'),
     });
     setLoading(false);
     if (err) setError(err.message);
