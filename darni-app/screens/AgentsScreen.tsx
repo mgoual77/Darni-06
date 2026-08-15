@@ -8,17 +8,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 
 import { BLUE, DARK, GRAY, GRAY_LT, BORDER } from '../lib/theme';
-
-// Palette de couleurs d'avatar assignée de façon stable par agent (pas de champ "color" en base)
-const AVATAR_COLORS = ['#4A90D9', '#E8A87C', '#7BB8A0', '#D4789C', '#5E8BC8', '#9B7EC8'];
-const colorFor = (id: string) => {
-  const hash = id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
-};
+import { AgentAvatar, colorFor } from '../components/AgentAvatar';
 
 type AgentRow = {
   id: string; name: string; wilaya: string; listings: number;
-  verified: boolean; color: string; phone: string;
+  verified: boolean; color: string; phone: string; avatarUrl: string | null;
 };
 
 export function AgentsScreen({ navigation }: any) {
@@ -39,7 +33,7 @@ export function AgentsScreen({ navigation }: any) {
       // et la wilaya la plus fréquente de leurs biens.
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, phone, badge_level, listings:listings(wilaya)')
+        .select('id, full_name, phone, badge_level, avatar_url, listings:listings(wilaya)')
         .not('listings', 'is', null);
 
       if (!isMounted) return;
@@ -67,6 +61,7 @@ export function AgentsScreen({ navigation }: any) {
             verified: p.badge_level === 'verified' || p.badge_level === 'pro',
             color: colorFor(p.id),
             phone: p.phone ?? '',
+            avatarUrl: p.avatar_url ?? null,
           };
         });
 
@@ -135,11 +130,12 @@ export function AgentsScreen({ navigation }: any) {
         {!loading && loadError === '' && activeTab === 'agents'
           ? filteredAgents.map(agent => (
               <TouchableOpacity key={agent.id} style={styles.card} onPress={() => goToProfile(agent)}>
-                <View style={[styles.avatar, { backgroundColor: agent.color }]}>
-                  <Text style={styles.avatarText}>
-                    {agent.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                  </Text>
-                </View>
+                <AgentAvatar
+                  name={agent.name}
+                  color={agent.color}
+                  avatarUrl={agent.avatarUrl}
+                  size={50}
+                />
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <Text style={styles.agentName}>{agent.name}</Text>
@@ -156,9 +152,14 @@ export function AgentsScreen({ navigation }: any) {
             ))
           : filteredAgencies.map(agency => (
               <TouchableOpacity key={agency.id} style={styles.card} onPress={() => goToProfile({ ...agency, name: agency.name, verified: true })}>
-                <View style={[styles.avatar, { backgroundColor: agency.color, borderRadius: 12 }]}>
-                  <Text style={styles.avatarText}>{agency.name.slice(0, 2).toUpperCase()}</Text>
-                </View>
+                <AgentAvatar
+                  name={agency.name}
+                  color={agency.color}
+                  avatarUrl={agency.avatarUrl}
+                  size={50}
+                  borderRadius={12}
+                  initials={agency.name.slice(0, 2).toUpperCase()}
+                />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.agentName}>{agency.name}</Text>
                   <Text style={styles.agentMeta}>{agency.wilaya} · {agency.listings} annonces</Text>
@@ -192,8 +193,6 @@ const styles = StyleSheet.create({
   toggleText:       { fontSize: 14, fontWeight: '600', color: GRAY },
   toggleTextActive: { color: '#fff' },
   card:             { backgroundColor: '#fff', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: BORDER, elevation: 2 },
-  avatar:           { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
-  avatarText:       { color: '#fff', fontSize: 16, fontWeight: '800' },
   agentName:        { fontSize: 15, fontWeight: '700', color: DARK },
   agentAgency:      { fontSize: 13, color: GRAY, marginTop: 2 },
   agentMeta:        { fontSize: 12, color: GRAY_LT, marginTop: 2 },

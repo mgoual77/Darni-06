@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { BLUE, DARK, GRAY, GRAY_LT, BORDER } from '../lib/theme';
 import { smartPrice, firstPhoto } from '../lib/format';
+import { AgentAvatar } from '../components/AgentAvatar';
 
 // Forme plurielle pour l'affichage en tags ("Spécialités : Appartements, Villas") —
 // distincte de TYPE_LABELS (lib/labels.ts) qui est au singulier pour une annonce isolée.
@@ -51,8 +52,6 @@ export function AgentProfileScreen({ route, navigation }: any) {
     .map(t => TYPE_LABELS[t] ?? t);
   const zones = [...new Set(listings.map(l => l.wilaya).filter(Boolean))];
 
-  const initials = agent.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2);
-
   const callAgent = () => {
     if (!agent.phone) { Alert.alert('Indisponible', 'Numéro non renseigné.'); return; }
     Linking.openURL(`tel:${agent.phone}`).catch(() =>
@@ -81,9 +80,12 @@ export function AgentProfileScreen({ route, navigation }: any) {
         contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}>
 
         <View style={styles.profileCard}>
-          <View style={[styles.avatar, { backgroundColor: agent.color }]}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
+          <AgentAvatar
+            name={agent.name}
+            color={agent.color}
+            avatarUrl={agent.avatarUrl}
+            size={88}
+          />
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
             <Text style={styles.agentName}>{agent.name}</Text>
@@ -194,8 +196,6 @@ const styles = StyleSheet.create({
   headerTitle:   { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '700', color: DARK },
 
   profileCard:   { backgroundColor: '#fff', alignItems: 'center', padding: 24, borderBottomWidth: 1, borderBottomColor: BORDER },
-  avatar:        { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center' },
-  avatarText:    { color: '#fff', fontSize: 30, fontWeight: '800' },
   agentName:     { fontSize: 20, fontWeight: '800', color: DARK },
   agentMeta:     { fontSize: 13, color: GRAY_LT, marginTop: 4 },
   verifiedBadge: { backgroundColor: '#D1FAE5', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
